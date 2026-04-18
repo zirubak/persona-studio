@@ -9,54 +9,33 @@
 
 ---
 
-## Phase 0 — 환경 준비 (5분)
+## Phase 0 — 환경 준비 (자동)
 
-### 0.1 Python 가상환경 활성화
+**비개발자 경로**: Claude Code에서 `/persona-studio`를 처음 치면 자동으로
+`scripts/setup.py`가 실행됩니다. venv 생성, `pip install -e ".[dev]"`, whisper
+모델 선다운로드, ffmpeg 감지까지 한 번에 끝냅니다. 아무것도 수동으로 할
+필요 없음. 두 번째 실행부터는 준비된 부분을 스킵하므로 1초 내 메뉴 진입.
+
+**수동 검증 (선택)**: bootstrap이 정상 동작하는지 확인하려면:
 
 ```bash
 cd /Users/jhbaek/Documents/GitHub/human_ai_agent_creator
-source .venv/bin/activate
+python3 scripts/setup.py
 ```
 
-**기대**: 프롬프트에 `(.venv)` 표시.
+**기대 출력 마지막 줄**: `[SUCCESS] persona-builder is ready. Run /persona-studio to start.`
 
-### 0.2 전체 의존성 설치
+**ffmpeg 없는 경우**: bootstrap이 경고와 함께 플랫폼별 설치 명령을 출력합니다.
+macOS면 `brew install ffmpeg`, Linux면 `apt`/`dnf`/`pacman` 선택지. 오디오/유튜브
+기능이 필요 없으면 무시해도 Phase 1-2는 동작합니다.
 
-기존 venv는 최소 의존성(typer, pydantic)만 설치된 상태입니다. 실제 E2E에는
-PDF/DOCX/오디오/YouTube 라이브러리가 필요합니다.
+**테스트 스위트 선택 확인**:
 
 ```bash
-pip install -e ".[dev]"
-pip install pypdf python-docx beautifulsoup4 trafilatura faster-whisper yt-dlp youtube-transcript-api
+.venv/bin/pytest -q
 ```
 
-**기대**: 에러 없이 설치. `faster-whisper`는 네이티브 바이너리가 커서 수 분 소요.
-
-**실패 시 보고**: `pip` 에러 메시지 전체 + `python --version` 결과.
-
-### 0.3 ffmpeg 확인 (YouTube 오디오 다운로드 필요)
-
-```bash
-which ffmpeg && ffmpeg -version | head -1
-```
-
-**기대**: 경로 + 버전 출력. 없으면 `brew install ffmpeg`.
-
-### 0.4 whisper 모델 선다운로드
-
-```bash
-python -m persona_builder.cli setup
-```
-
-**기대**: `Model ready.` 출력. 약 140MB 다운로드.
-
-### 0.5 테스트 스위트 재확인
-
-```bash
-pytest --cov
-```
-
-**기대**: 91+ passed, 커버리지 80%+.
+**기대**: 111+ passed.
 
 ---
 

@@ -12,22 +12,23 @@
 
 Claude Code만 있으면 됩니다. CLI 명령어를 직접 타이핑할 필요 없습니다.
 
-### 1) 한 번만 설치
+### 1) 스튜디오 열기 (자동 설치 포함)
 
 Claude Code에서:
 
 ```
-/persona-setup
-```
-
-내부적으로 `pip install -e .` 과 whisper 모델 다운로드를 자동 실행합니다. 몇 분
-걸릴 수 있습니다.
-
-### 2) 스튜디오 열기
-
-```
 /persona-studio
 ```
+
+처음 실행 시 `scripts/setup.py`가 자동으로 실행되어:
+- `.venv/` 가상환경 생성
+- 필요한 Python 패키지 전체 설치 (`pip install -e ".[dev]"`)
+- faster-whisper 모델 선다운로드
+- `ffmpeg` 감지 (없으면 플랫폼별 설치 명령 안내)
+
+두 번째 실행부터는 이미 준비된 것은 스킵하고 1초 내에 메뉴로 진입합니다.
+
+### 2) 메뉴 따라가기
 
 메뉴가 뜹니다. 화살표/Tab + Enter로 선택:
 

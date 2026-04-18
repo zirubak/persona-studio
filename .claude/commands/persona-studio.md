@@ -8,24 +8,26 @@ You are operating the Persona Studio control panel. The user may be a non-develo
 they should never need to type any other slash command or CLI during this session.
 Drive everything through `AskUserQuestion` tool calls with explicit `options`.
 
-## Step 1 — Environment check (run once per session)
+## Step 1 — First-run auto-bootstrap (idempotent, ~1 minute after first install)
 
-Before showing the menu, verify the Python side is ready. Run:
-
-```bash
-python -c "import persona_builder" 2>/dev/null && echo OK || echo MISSING
-```
-
-If the output is `MISSING`, tell the user (in Korean) that you need to install the
-ETL toolkit once, then run:
+Before showing the menu, always run the bootstrap. It creates `.venv/`, installs
+the package with all runtime + dev dependencies, warns if ffmpeg is missing, and
+pre-downloads the whisper model. All steps are skipped if already satisfied, so
+this is safe to run every session.
 
 ```bash
-pip install -e .
+python3 scripts/setup.py
 ```
 
-After success, run `python -m persona_builder.cli setup` to pre-download the
-whisper model (allow several minutes on first run). If `pip install` fails because
-Python or pip isn't available, stop and ask the user to install Python 3.10+ first.
+Interpret the exit code:
+- `0` — ready, continue to Step 2
+- `2` — Python version too old. Tell the user (Korean): "Python 3.10 이상이 필요합니다. `brew install python@3.12` 후 다시 시도해주세요." Stop.
+- Any other non-zero — show the final lines of the output and ask the user whether to retry or skip (AskUserQuestion).
+
+If `ffmpeg not found` appears in the output, the bootstrap continues with a
+warning. Audio and YouTube paths will fail until the user installs it. Mention
+this in Korean with the platform-specific hint printed by the script (brew on
+darwin, apt/dnf/pacman on linux).
 
 ## Step 2 — Show the main menu (loop)
 
