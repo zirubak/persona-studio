@@ -58,25 +58,34 @@ this menu instead of ending the session.
 
 ## Route B — 토론 시뮬레이션
 
-1. AskUserQuestion: `순차 (한 화면, 빠름)` / `실시간 분할 화면 (tmux, 여러 패널 동시, 중간 개입 가능)`.
+1. AskUserQuestion **3-way mode**:
+   - `순차 (빠름, tmux 불필요)` — 한 화면 텍스트 스트림
+   - `실시간 분할 화면 (tmux, 중간 개입 가능)` — split-panes teammates
+   - `실시간 분할 + Ralph 루프 (만족도 미달 시 자동 재실행)` — Ralph variant
 2. Glob `personas/*.md` and present participants via AskUserQuestion with
    `multiSelect: true`. Require 2-5 selections.
 3. Ask for the topic (free text) and number of rounds (default 4).
 4. Route by mode:
    - `순차` → Execute `.claude/commands/simulate-debate.md` inline.
-   - `실시간 분할 화면` → Execute `.claude/commands/simulate-debate-team.md` inline (includes pre-flight tmux + teammate-mode check; auto-fallback to sequential with user confirmation if check fails).
+   - `실시간 분할 화면` → Execute `.claude/commands/simulate-debate-team.md` inline.
+   - `실시간 분할 + Ralph 루프` → Execute `.claude/commands/simulate-debate-team-ralph.md` inline (adds satisfaction-score TUI + Ralph iteration loop; same tmux/teammate-mode pre-flight).
+5. Ralph and team variants auto-fallback to sequential with user confirmation if tmux/teammate-mode pre-flight fails.
 
 ## Route C — 회의 시뮬레이션
 
-1. AskUserQuestion: `순차 (한 화면, 빠름)` / `실시간 분할 화면 (tmux, 여러 패널 동시, 중간 개입 가능)`.
+1. AskUserQuestion **3-way mode** (same 3 options as Route B).
 2. Same participant selection as Route B (2-6 people).
 3. Ask for the meeting topic. Offer to auto-generate the agenda or take a custom
    one (AskUserQuestion: `자동 생성` / `직접 입력`).
 4. Route by mode:
    - `순차` → Execute `.claude/commands/simulate-meeting.md` inline.
-   - `실시간 분할 화면` → Execute `.claude/commands/simulate-meeting-team.md` inline (includes pre-flight tmux + teammate-mode check; auto-fallback to sequential with user confirmation if check fails).
+   - `실시간 분할 화면` → Execute `.claude/commands/simulate-meeting-team.md` inline.
+   - `실시간 분할 + Ralph 루프` → Execute `.claude/commands/simulate-meeting-team-ralph.md` inline (adds satisfaction-score TUI + Ralph iteration loop; same tmux/teammate-mode pre-flight).
 
-**팁**: 실시간 분할 화면은 tmux + `claude --teammate-mode split-panes` 세션에서만 동작. 처음이면 `docs/TEAM_MODE_GUIDE.md` 참조.
+**팁**:
+- 실시간 분할 화면은 tmux + `claude --teammate-mode split-panes` 세션에서만 동작.
+- Ralph 루프는 시작 전 TUI 로 목표 점수(0-10), 측정 기준 3개, 최대 iteration(1-5)을 입력받고, 매 iteration 종료 시 스코어링 → 미달 시 자동 재실행. 자세한 사용법은 `docs/TEAM_MODE_GUIDE.md` 참조.
+- 모든 시뮬레이션은 반드시 `## 결론` / `## 만족도 평가` / `## 시스템 피드백` 3개 H2 섹션을 포함해야 하며, docs 파이프라인이 이를 검증합니다.
 
 ## Route D — 아바타 목록
 

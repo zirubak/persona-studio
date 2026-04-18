@@ -1,19 +1,35 @@
 """Convert a simulation transcript (markdown) into Word (.docx) + PowerPoint (.pptx).
 
-Designed for the outputs of `/simulate-meeting` and `/simulate-debate`. The
-input is a markdown file under `simulations/` with:
+This script is the **Python fallback** path for the docs pipeline. The preferred
+orchestration (documented in `.claude/commands/simulate-*.md` Step 5) is:
 
+    1. Try `Skill('document-skills:docx')` + `Skill('document-skills:pptx')`
+       from Claude Code runtime to get Anthropic-quality outputs.
+    2. If those skills are unavailable or fail, fall back to this script.
+
+This script cannot invoke the Skill tool itself (that's a Claude Code runtime
+primitive, not a Python API). So the `.claude/commands/simulate-*.md` files own
+the skill-first decision; this script guarantees a working fallback.
+
+Input contract (markdown):
 - YAML frontmatter (kind, topic, participants, agenda, generated)
-- H1 for the document title
-- H2 per agenda item / "종료 요약"
-- H3 per speaker ("Lead — <name>", "Challenger — <name>", "결정 요약 (퍼실리테이터)")
-- blockquote lines for the actual speech
+- H1 for document title
+- H2 per agenda item + three MANDATORY close-out sections:
+    - `## 결론`            conclusion (1-3 sentences, "no consensus" allowed)
+    - `## 만족도 평가`      satisfaction score + per-criterion breakdown
+    - `## 시스템 피드백`    persona / process / platform improvement notes
+- H3 per speaker (`Lead — <name>`, `Challenger — <name>`, `결정 요약 ...`)
+- blockquote lines for speech
 
-Output files land in the same directory as the input, with `.docx` and `.pptx`
-extensions. Both are re-generated every run (deterministic from input).
+`validate_three_axis_schema()` enforces the mandatory-sections rule. Run with
+`--strict` to exit non-zero when any axis is missing. Without `--strict`, the
+parser prints a warning to stderr and still produces the output files (useful
+when iterating on transcript drafts).
+
+Output directory: same as the input. Stems match the input markdown.
 
 Usage:
-    python scripts/simulation_to_docs.py <path/to/transcript.md>
+    python scripts/simulation_to_docs.py <path/to/transcript.md> [--strict]
 
 Dependencies: python-docx, python-pptx (both in pyproject dependencies).
 """
@@ -396,6 +412,43 @@ def _parse_md_table(text: str) -> list[dict[str, str]]:
     return rows
 
 
+# --- 3-axis schema validation --------------------------------------------
+
+
+REQUIRED_AXES: tuple[str, ...] = (
+    "결론",
+    "만족도 평가",
+    "시스템 피드백",
+)
+
+
+def validate_three_axis_schema(transcript: Transcript) -> list[str]:
+    """Return the list of missing mandatory axes.
+
+    Every simulation transcript must include `## 결론`, `## 만족도 평가`, and
+    `## 시스템 피드백` as H2 sections (or as subsections under `## 종료 요약`).
+    An empty return value means the schema is satisfied.
+    """
+    titles = [s.title for s in transcript.sections]
+    if transcript.closing is not None:
+        titles.append(transcript.closing.title)
+    flat = " | ".join(titles)
+
+    closing_body = ""
+    if transcript.closing is not None:
+        for speaker in transcript.closing.speakers:
+            closing_body += "\n".join(speaker.lines) + "\n"
+
+    missing: list[str] = []
+    for axis in REQUIRED_AXES:
+        if axis in flat:
+            continue
+        if axis in closing_body:
+            continue
+        missing.append(axis)
+    return missing
+
+
 # --- main -----------------------------------------------------------------
 
 
@@ -410,6 +463,12 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="Override output directory (default: same as input file)",
     )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit 2 if the 3-axis schema (결론·만족도 평가·시스템 피드백) is violated. "
+        "Default: warn and continue.",
+    )
     args = parser.parse_args(argv)
 
     if not args.input.exists():
@@ -417,6 +476,18 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     transcript = parse_transcript(args.input)
+
+    missing_axes = validate_three_axis_schema(transcript)
+    if missing_axes:
+        msg = (
+            f"[WARN] transcript missing mandatory axes: {missing_axes}. "
+            "Every simulation must include `## 결론`, `## 만족도 평가`, `## 시스템 피드백`."
+        )
+        print(msg, file=sys.stderr)
+        if args.strict:
+            print("[ERROR] --strict enabled; aborting.", file=sys.stderr)
+            return 2
+
     out_dir = args.out_dir or args.input.parent
     out_dir.mkdir(parents=True, exist_ok=True)
     stem = args.input.stem
@@ -429,7 +500,11 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"docx written: {docx_path}")
     print(f"pptx written: {pptx_path}")
-    print(f"sections: {len(transcript.sections)}, closing: {'yes' if transcript.closing else 'no'}")
+    print(
+        f"sections: {len(transcript.sections)}, "
+        f"closing: {'yes' if transcript.closing else 'no'}, "
+        f"schema: {'ok' if not missing_axes else f'missing {missing_axes}'}"
+    )
     return 0
 
 
