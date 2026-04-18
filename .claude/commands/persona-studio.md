@@ -58,17 +58,25 @@ this menu instead of ending the session.
 
 ## Route B — 토론 시뮬레이션
 
-1. Glob `personas/*.md` and present participants via AskUserQuestion with
+1. AskUserQuestion: `순차 (한 화면, 빠름)` / `실시간 분할 화면 (tmux, 여러 패널 동시, 중간 개입 가능)`.
+2. Glob `personas/*.md` and present participants via AskUserQuestion with
    `multiSelect: true`. Require 2-5 selections.
-2. Ask for the topic (free text) and number of rounds (default 4).
-3. Execute the steps from `.claude/commands/simulate-debate.md` inline.
+3. Ask for the topic (free text) and number of rounds (default 4).
+4. Route by mode:
+   - `순차` → Execute `.claude/commands/simulate-debate.md` inline.
+   - `실시간 분할 화면` → Execute `.claude/commands/simulate-debate-team.md` inline (includes pre-flight tmux + teammate-mode check; auto-fallback to sequential with user confirmation if check fails).
 
 ## Route C — 회의 시뮬레이션
 
-1. Same participant selection as Route B (2-6 people).
-2. Ask for the meeting topic. Offer to auto-generate the agenda or take a custom
+1. AskUserQuestion: `순차 (한 화면, 빠름)` / `실시간 분할 화면 (tmux, 여러 패널 동시, 중간 개입 가능)`.
+2. Same participant selection as Route B (2-6 people).
+3. Ask for the meeting topic. Offer to auto-generate the agenda or take a custom
    one (AskUserQuestion: `자동 생성` / `직접 입력`).
-3. Execute the steps from `.claude/commands/simulate-meeting.md` inline.
+4. Route by mode:
+   - `순차` → Execute `.claude/commands/simulate-meeting.md` inline.
+   - `실시간 분할 화면` → Execute `.claude/commands/simulate-meeting-team.md` inline (includes pre-flight tmux + teammate-mode check; auto-fallback to sequential with user confirmation if check fails).
+
+**팁**: 실시간 분할 화면은 tmux + `claude --teammate-mode split-panes` 세션에서만 동작. 처음이면 `docs/TEAM_MODE_GUIDE.md` 참조.
 
 ## Route D — 아바타 목록
 

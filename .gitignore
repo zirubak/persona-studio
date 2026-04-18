@@ -190,3 +190,6 @@ data/people/*/raw/audio_cache/
 simulations/
 !data/people/sample_private/raw/
 !data/people/sample_private/raw/**
+
+# Playwright MCP session artifacts (tab snapshots, console logs)
+.playwright-mcp/

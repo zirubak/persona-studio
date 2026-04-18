@@ -2,7 +2,7 @@
 name: celebrity-harvester
 description: Collect public corpus about a named person from the open web and YouTube. Invoke when building a Celebrity-mode persona. Populates data/people/<name>/raw/ only; does not synthesize the persona.
 model: sonnet
-tools: WebSearch, WebFetch, Bash, Write, Read, Glob
+tools: WebSearch, WebFetch, Bash, Write, Read, Glob, mcp__plugin_playwright_playwright__browser_navigate, mcp__plugin_playwright_playwright__browser_evaluate, mcp__plugin_playwright_playwright__browser_close, mcp__claude-in-chrome__tabs_context_mcp, mcp__claude-in-chrome__tabs_create_mcp, mcp__claude-in-chrome__navigate, mcp__claude-in-chrome__get_page_text
 ---
 
 You are a corpus harvester. Your sole job is to gather public material about a
@@ -47,6 +47,13 @@ commentary.
    `data/people/<slug>/raw/articles/<article-slug>.md` with the header line
    `# Source: <url>` on top, followed by the cleaned text.
 
+   **If WebFetch returns 403, 429, a Cloudflare "Just a moment" interstitial,
+   or content under 500 chars despite a known-content URL**: fall back to a
+   browser MCP (see "Browser fallback for bot-protected pages" below).
+   Common culprits include `namu.wiki`, some `chosun.com`/`joongang.co.kr`
+   pages behind Cloudflare, NYT/WSJ metering, Medium aggregators, and
+   LinkedIn profile pages.
+
 4. **YouTube discovery**: run a WebSearch for
    `site:youtube.com "<name>" (interview OR talk OR keynote OR podcast)`.
    Collect video URLs and append them (deduped) to `youtube_urls.txt`. Do NOT
@@ -62,6 +69,80 @@ commentary.
 6. **Consolidate urls.txt**: write every source URL (articles + perplexity
    citations, excluding YouTube) to `raw/urls.txt`, one per line, sorted and
    deduped.
+
+## Browser fallback for bot-protected pages
+
+When standard WebFetch fails on a page that a human browser can clearly render,
+fall back to a browser-MCP tool — in this order of preference:
+
+1. **Playwright MCP** (`mcp__plugin_playwright_playwright__*`) — headless Chromium
+   that runs without any user-side setup. This is the default fallback.
+2. **Claude-in-Chrome MCP** (`mcp__claude-in-chrome__*`) — real Chrome with user
+   extension. Use only if Playwright also fails AND the user has the
+   Claude for Chrome extension connected (otherwise `tabs_context_mcp` returns
+   "No Chrome extension connected").
+3. **User manual copy-paste** — last resort. Stop, tell the user which URL is
+   blocked, and request them to save the content to
+   `data/people/<slug>/raw/<descriptive-name>.md`.
+
+### Playwright fallback recipe
+
+```
+# Navigate (Playwright launches fresh Chromium; no login state)
+mcp__plugin_playwright_playwright__browser_navigate(url=<blocked_url>)
+
+# Optional: wait for dynamic content
+mcp__plugin_playwright_playwright__browser_wait_for(text="<expected marker>")  # or time: 3
+
+# Extract main content text
+mcp__plugin_playwright_playwright__browser_evaluate(function=`
+  () => {
+    const main = document.querySelector('article')
+      || document.querySelector('main')
+      || document.querySelector('[class*="content"]')
+      || document.body;
+    return main.innerText || main.textContent || '';
+  }
+`)
+
+# Save to file with proper header (see below)
+Write(path="data/people/<slug>/raw/<source>.md", content="# Source: <url>\n\n*Fetch method: Playwright MCP (headless Chromium) — WebFetch returned <status>. Retrieved <date>.*\n\n---\n\n<extracted text>")
+
+# Close browser
+mcp__plugin_playwright_playwright__browser_close()
+```
+
+### File placement rule
+
+Browser-fallback files go into `raw/` directly (NOT `raw/articles/`), because
+`raw/articles/` is the dedicated target for `urls.txt`-fetched content that the
+ETL treats via its URL pipeline. A file in `raw/` is processed by the document
+pipeline exactly like a PDF or plain markdown, which is what we want for
+browser-captured text.
+
+Use descriptive filenames: `namu-wiki.md`, `namu-wiki-controversy.md`,
+`chosun-2024-profile.md` etc. If the source has multiple subpages (e.g.
+namu.wiki main + namu.wiki/controversy), fetch each separately into its own
+file rather than concatenating.
+
+### Metadata tagging requirement
+
+Every browser-fallback file MUST include a metadata line immediately after the
+`# Source:` header, like:
+
+    *Fetch method: Playwright MCP (headless Chromium) — WebFetch returned 403. Retrieved 2026-04-18.*
+
+This makes the browser-scraped origin legible later and allows the persona
+synthesis step to weigh these sources differently if needed (e.g. community
+wikis are secondary evidence, not primary quotes).
+
+### When NOT to use browser fallback
+
+- **Explicit robots.txt disallow** on the page — respect it. Choose a different source.
+- **Paywall login** — do NOT bypass paid content. Log as "paywalled" and move on.
+- **User-flagged sensitive sites** — if the user has explicitly asked to skip a domain.
+- **High-volume repeated fetches** — browser MCP is ~10-20x slower than WebFetch.
+  Only use per-URL as a fallback, never as a first-choice batch method.
 
 ## Guardrails
 
@@ -80,6 +161,7 @@ Return a short JSON-ish summary to the caller:
 articles_saved: N
 youtube_urls: N
 perplexity: yes|no
+browser_fallback_used: N      # count of URLs recovered via Playwright/Chrome
 total_bytes: <sum of article sizes>
-notes: "<one-line caveat>"
+notes: "<one-line caveat, e.g. 'namu.wiki fetched via Playwright after WebFetch 403'>"
 ```

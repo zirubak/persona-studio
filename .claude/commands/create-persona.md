@@ -38,6 +38,14 @@ Write `data/people/<name>/mode` = `private` or `celebrity` once chosen.
 
 3. Read `data/people/<name>/extracted/corpus.md`.
 
+4. **If any URL in `urls.txt` recorded `unsafe_scheme` or resulted in `[fetch failed: ...]`
+   (403, 429, short content) in the manifest**: apply the browser fallback policy
+   documented in `.claude/agents/celebrity-harvester.md` under "Browser fallback for
+   bot-protected pages". Recover the URL via Playwright MCP, save the content to
+   `data/people/<name>/raw/<slug>.md` with the mandatory metadata header, then
+   re-run `python -m persona_builder.cli extract <name>`. This keeps Private and
+   Celebrity modes symmetric — both benefit from the same fallback.
+
 ### Celebrity mode
 
 1. AskUserQuestion to gather hints:
