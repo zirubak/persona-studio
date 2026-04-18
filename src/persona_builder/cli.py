@@ -5,6 +5,7 @@ Kept deliberately small: every LLM-driven step lives in Claude Code.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import typer
@@ -16,8 +17,20 @@ app = typer.Typer(help="Persona Builder ETL.")
 
 DATA_ROOT = Path("data") / "people"
 
+# Prevents path traversal and filesystem-hostile names. Slashes, dots, etc. are
+# rejected before any path join happens.
+_SAFE_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}")
+
 
 def _person_dir(name: str) -> Path:
+    if not _SAFE_NAME_RE.fullmatch(name):
+        raise typer.BadParameter(
+            f"name must match [A-Za-z0-9][A-Za-z0-9_-]{{0,63}}, got: {name!r}"
+        )
+    resolved = (DATA_ROOT / name).resolve()
+    root_resolved = DATA_ROOT.resolve()
+    if not str(resolved).startswith(str(root_resolved) + "/") and resolved != root_resolved:
+        raise typer.BadParameter("name escapes data root")
     return DATA_ROOT / name
 
 

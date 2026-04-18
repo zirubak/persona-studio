@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
 
 from persona_builder.ingest.audio import transcribe as transcribe_audio
+
+logger = logging.getLogger(__name__)
 
 VIDEO_ID_RE = re.compile(
     r"(?:youtu\.be/|v=|embed/|shorts/)([A-Za-z0-9_-]{11})"
@@ -62,13 +65,15 @@ def _try_captions(video_id: str) -> str | None:
 
         segments = YouTubeTranscriptApi.get_transcript(video_id, languages=["ko", "en"])
         return "\n".join(s["text"].strip() for s in segments if s.get("text"))
-    except Exception:
+    except Exception as exc:
+        logger.warning("caption fetch failed for %s: %s", video_id, exc)
         return None
 
 
 def _download_audio(url: str, audio_cache_dir: Path, video_id: str) -> Path | None:
     audio_cache_dir.mkdir(parents=True, exist_ok=True)
     output_template = str(audio_cache_dir / f"{video_id}.%(ext)s")
+    canonical_url = f"https://www.youtube.com/watch?v={video_id}"
     try:
         from yt_dlp import YoutubeDL
 
@@ -82,8 +87,10 @@ def _download_audio(url: str, audio_cache_dir: Path, video_id: str) -> Path | No
             ],
         }
         with YoutubeDL(ydl_opts) as ydl:  # type: ignore[arg-type]
-            ydl.download([url])
-    except Exception:
+            ydl.download([canonical_url])
+    except Exception as exc:
+        logger.warning("yt-dlp download failed for %s: %s", video_id, exc)
         return None
+    del url  # use canonical_url only; original kept for caller traceability
     candidate = audio_cache_dir / f"{video_id}.mp3"
     return candidate if candidate.exists() else None

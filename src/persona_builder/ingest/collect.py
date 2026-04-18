@@ -20,7 +20,7 @@ from persona_builder.ingest.web import fetch_urls
 from persona_builder.ingest.youtube import fetch_one as fetch_youtube_one
 
 
-@dataclass
+@dataclass(frozen=True)
 class ManifestEntry:
     source: str
     type: str
@@ -29,11 +29,11 @@ class ManifestEntry:
     error: str | None = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class CollectResult:
     corpus_path: Path
     manifest_path: Path
-    entries: list[ManifestEntry] = field(default_factory=list)
+    entries: tuple[ManifestEntry, ...] = field(default_factory=tuple)
 
     @property
     def ok_count(self) -> int:
@@ -92,7 +92,9 @@ def collect(person_dir: Path) -> CollectResult:
         json.dumps([e.__dict__ for e in entries], indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
-    return CollectResult(corpus_path=corpus_path, manifest_path=manifest_path, entries=entries)
+    return CollectResult(
+        corpus_path=corpus_path, manifest_path=manifest_path, entries=tuple(entries)
+    )
 
 
 META_FILENAMES = {"urls.txt", "youtube_urls.txt"}

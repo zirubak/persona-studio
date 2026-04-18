@@ -26,7 +26,9 @@ def extract_text(path: Path) -> str:
     if suffix in {".html", ".htm"}:
         return _extract_html(path)
     if suffix in {".md", ".markdown", ".txt"}:
-        return path.read_text(encoding="utf-8", errors="replace")
+        # Strict decode: a bad encoding should surface as a per-file error in
+        # the manifest rather than silently poisoning the corpus with \ufffd.
+        return path.read_text(encoding="utf-8")
     raise RuntimeError(f"Unsupported document extension: {suffix} ({path})")
 
 
@@ -53,7 +55,7 @@ def _extract_docx(path: Path) -> str:
 def _extract_html(path: Path) -> str:
     import trafilatura
 
-    raw = path.read_text(encoding="utf-8", errors="replace")
+    raw = path.read_text(encoding="utf-8")
     extracted = trafilatura.extract(raw, include_comments=False, include_tables=True)
     if extracted:
         return extracted

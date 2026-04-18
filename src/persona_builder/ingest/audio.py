@@ -6,6 +6,7 @@ re-running the pipeline does not re-transcribe unchanged inputs.
 
 from __future__ import annotations
 
+import hashlib
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -39,7 +40,10 @@ def transcribe(
     source audio is newer.
     """
     cache_dir.mkdir(parents=True, exist_ok=True)
-    cache_file = cache_dir / f"{path.stem}.txt"
+    # Hash the full resolved path so that two audio files with the same stem
+    # but different parent directories do not overwrite each other's transcript.
+    path_key = hashlib.sha1(str(path.resolve()).encode("utf-8")).hexdigest()[:12]
+    cache_file = cache_dir / f"{path.stem}-{path_key}.txt"
     if cache_file.exists() and cache_file.stat().st_mtime >= path.stat().st_mtime:
         return cache_file.read_text(encoding="utf-8")
 

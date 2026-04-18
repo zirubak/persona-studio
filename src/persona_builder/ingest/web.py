@@ -11,6 +11,9 @@ import hashlib
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
+
+ALLOWED_SCHEMES: frozenset[str] = frozenset({"http", "https"})
 
 
 @dataclass(frozen=True)
@@ -19,6 +22,15 @@ class FetchResult:
     output_path: Path | None
     ok: bool
     error: str | None = None
+
+
+def is_safe_http_url(url: str) -> bool:
+    """True iff url parses to http/https with a non-empty host."""
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return False
+    return parsed.scheme in ALLOWED_SCHEMES and bool(parsed.netloc)
 
 
 def fetch_urls(urls_file: Path, articles_dir: Path) -> list[FetchResult]:
@@ -37,6 +49,9 @@ def fetch_urls(urls_file: Path, articles_dir: Path) -> list[FetchResult]:
 
     results: list[FetchResult] = []
     for url in urls:
+        if not is_safe_http_url(url):
+            results.append(FetchResult(url=url, output_path=None, ok=False, error="unsafe_scheme"))
+            continue
         slug = _slug_for(url)
         out = articles_dir / f"{slug}.md"
         if out.exists() and out.stat().st_size > 0:

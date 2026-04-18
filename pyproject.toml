@@ -25,8 +25,33 @@ dependencies = [
     "httpx>=0.27",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
 [project.scripts]
 persona-builder = "persona_builder.cli:app"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["src"]
+
+[tool.coverage.run]
+source = ["src/persona_builder"]
+omit = [
+    "src/persona_builder/ingest/audio.py",
+    "src/persona_builder/ingest/youtube.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/persona_builder"]
