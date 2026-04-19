@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Persona Studio — AI avatars running a virtual meeting in parallel tmux panes">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#14183B"/>
+      <stop offset="1" stop-color="#1E2761"/>
+    </linearGradient>
+    <linearGradient id="pane" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1E2761" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#0F1330" stop-opacity="0.95"/>
+    </linearGradient>
+    <radialGradient id="avatar" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#CADCFC" stop-opacity="0.95"/>
+      <stop offset="0.55" stop-color="#7A93D6" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#1E2761" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="avatarAccent" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#F4A78C" stop-opacity="0.95"/>
+      <stop offset="0.55" stop-color="#E07A5F" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#1E2761" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="b"/>
+      <feOffset in="b" dx="0" dy="6"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.55"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#CADCFC" stroke-opacity="0.04" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <!-- background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- connection lines between panes (data flow) -->
+  <g stroke="#E07A5F" stroke-opacity="0.35" stroke-width="1.5" fill="none">
+    <path d="M 320 235 C 450 200 550 200 680 235" stroke-dasharray="4 6"/>
+    <path d="M 320 395 C 480 440 620 440 780 395" stroke-dasharray="4 6"/>
+    <path d="M 600 265 L 600 375" stroke-dasharray="4 6"/>
+    <path d="M 880 235 C 920 290 920 340 880 395" stroke-dasharray="4 6"/>
+  </g>
+  <g stroke="#CADCFC" stroke-opacity="0.18" stroke-width="1" fill="none">
+    <path d="M 220 175 L 220 455" stroke-dasharray="2 4"/>
+    <path d="M 980 175 L 980 455" stroke-dasharray="2 4"/>
+  </g>
+
+  <!-- PANE 1 (top-left) -->
+  <g filter="url(#softShadow)">
+    <rect x="180" y="145" width="240" height="180" rx="8" ry="8" fill="url(#pane)" stroke="#CADCFC" stroke-opacity="0.22" stroke-width="1"/>
+    <!-- title bar -->
+    <rect x="180" y="145" width="240" height="22" rx="8" ry="8" fill="#0F1330" stroke="none"/>
+    <rect x="180" y="160" width="240" height="8" fill="#0F1330"/>
+    <circle cx="195" cy="156" r="4" fill="#E07A5F"/>
+    <circle cx="209" cy="156" r="4" fill="#F4C572"/>
+    <circle cx="223" cy="156" r="4" fill="#8FD694"/>
+    <text x="240" y="160" font-family="ui-monospace,Menlo,monospace" font-size="11" fill="#CADCFC" fill-opacity="0.6">avatar-01</text>
+    <!-- avatar silhouette -->
+    <circle cx="300" cy="245" r="58" fill="url(#avatar)" filter="url(#glow)"/>
+    <circle cx="300" cy="230" r="20" fill="#CADCFC" fill-opacity="0.85"/>
+    <path d="M 270 268 Q 300 250 330 268 L 330 290 L 270 290 Z" fill="#CADCFC" fill-opacity="0.7"/>
+    <!-- faux dialogue lines -->
+    <rect x="196" y="305" width="140" height="4" rx="2" fill="#CADCFC" fill-opacity="0.25"/>
+    <rect x="196" y="313" width="180" height="4" rx="2" fill="#CADCFC" fill-opacity="0.18"/>
+  </g>
+
+  <!-- PANE 2 (top-center) -->
+  <g filter="url(#softShadow)">
+    <rect x="460" y="115" width="280" height="210" rx="8" ry="8" fill="url(#pane)" stroke="#E07A5F" stroke-opacity="0.45" stroke-width="1.5"/>
+    <rect x="460" y="115" width="280" height="24" rx="8" ry="8" fill="#0F1330"/>
+    <rect x="460" y="131" width="280" height="8" fill="#0F1330"/>
+    <circle cx="475" cy="127" r="4" fill="#E07A5F"/>
+    <circle cx="489" cy="127" r="4" fill="#F4C572"/>
+    <circle cx="503" cy="127" r="4" fill="#8FD694"/>
+    <text x="520" y="131" font-family="ui-monospace,Menlo,monospace" font-size="11" fill="#F4A78C" fill-opacity="0.85">facilitator</text>
+    <!-- accent (center = facilitator, terracotta glow) -->
+    <circle cx="600" cy="225" r="64" fill="url(#avatarAccent)" filter="url(#glow)"/>
+    <circle cx="600" cy="208" r="22" fill="#F4A78C" fill-opacity="0.9"/>
+    <path d="M 568 250 Q 600 230 632 250 L 632 278 L 568 278 Z" fill="#F4A78C" fill-opacity="0.75"/>
+    <rect x="475" y="298" width="180" height="4" rx="2" fill="#F4A78C" fill-opacity="0.35"/>
+    <rect x="475" y="306" width="230" height="4" rx="2" fill="#F4A78C" fill-opacity="0.25"/>
+  </g>
+
+  <!-- PANE 3 (top-right) -->
+  <g filter="url(#softShadow)">
+    <rect x="780" y="145" width="240" height="180" rx="8" ry="8" fill="url(#pane)" stroke="#CADCFC" stroke-opacity="0.22" stroke-width="1"/>
+    <rect x="780" y="145" width="240" height="22" rx="8" ry="8" fill="#0F1330"/>
+    <rect x="780" y="160" width="240" height="8" fill="#0F1330"/>
+    <circle cx="795" cy="156" r="4" fill="#E07A5F"/>
+    <circle cx="809" cy="156" r="4" fill="#F4C572"/>
+    <circle cx="823" cy="156" r="4" fill="#8FD694"/>
+    <text x="840" y="160" font-family="ui-monospace,Menlo,monospace" font-size="11" fill="#CADCFC" fill-opacity="0.6">avatar-02</text>
+    <circle cx="900" cy="245" r="58" fill="url(#avatar)" filter="url(#glow)"/>
+    <circle cx="900" cy="230" r="20" fill="#CADCFC" fill-opacity="0.85"/>
+    <path d="M 870 268 Q 900 250 930 268 L 930 290 L 870 290 Z" fill="#CADCFC" fill-opacity="0.7"/>
+    <rect x="796" y="305" width="160" height="4" rx="2" fill="#CADCFC" fill-opacity="0.25"/>
+    <rect x="796" y="313" width="200" height="4" rx="2" fill="#CADCFC" fill-opacity="0.18"/>
+  </g>
+
+  <!-- PANE 4 (bottom-left) -->
+  <g filter="url(#softShadow)">
+    <rect x="240" y="355" width="240" height="170" rx="8" ry="8" fill="url(#pane)" stroke="#CADCFC" stroke-opacity="0.22" stroke-width="1"/>
+    <rect x="240" y="355" width="240" height="22" rx="8" ry="8" fill="#0F1330"/>
+    <rect x="240" y="370" width="240" height="8" fill="#0F1330"/>
+    <circle cx="255" cy="366" r="4" fill="#E07A5F"/>
+    <circle cx="269" cy="366" r="4" fill="#F4C572"/>
+    <circle cx="283" cy="366" r="4" fill="#8FD694"/>
+    <text x="300" y="370" font-family="ui-monospace,Menlo,monospace" font-size="11" fill="#CADCFC" fill-opacity="0.6">avatar-03</text>
+    <circle cx="360" cy="450" r="54" fill="url(#avatar)" filter="url(#glow)"/>
+    <circle cx="360" cy="436" r="18" fill="#CADCFC" fill-opacity="0.85"/>
+    <path d="M 332 471 Q 360 454 388 471 L 388 494 L 332 494 Z" fill="#CADCFC" fill-opacity="0.7"/>
+    <rect x="256" y="505" width="150" height="4" rx="2" fill="#CADCFC" fill-opacity="0.25"/>
+  </g>
+
+  <!-- PANE 5 (bottom-right) -->
+  <g filter="url(#softShadow)">
+    <rect x="720" y="355" width="240" height="170" rx="8" ry="8" fill="url(#pane)" stroke="#CADCFC" stroke-opacity="0.22" stroke-width="1"/>
+    <rect x="720" y="355" width="240" height="22" rx="8" ry="8" fill="#0F1330"/>
+    <rect x="720" y="370" width="240" height="8" fill="#0F1330"/>
+    <circle cx="735" cy="366" r="4" fill="#E07A5F"/>
+    <circle cx="749" cy="366" r="4" fill="#F4C572"/>
+    <circle cx="763" cy="366" r="4" fill="#8FD694"/>
+    <text x="780" y="370" font-family="ui-monospace,Menlo,monospace" font-size="11" fill="#CADCFC" fill-opacity="0.6">avatar-04</text>
+    <circle cx="840" cy="450" r="54" fill="url(#avatar)" filter="url(#glow)"/>
+    <circle cx="840" cy="436" r="18" fill="#CADCFC" fill-opacity="0.85"/>
+    <path d="M 812 471 Q 840 454 868 471 L 868 494 L 812 494 Z" fill="#CADCFC" fill-opacity="0.7"/>
+    <rect x="736" y="505" width="170" height="4" rx="2" fill="#CADCFC" fill-opacity="0.25"/>
+  </g>
+
+  <!-- soft light particles -->
+  <g fill="#CADCFC" fill-opacity="0.35">
+    <circle cx="150" cy="110" r="2"/>
+    <circle cx="1050" cy="95" r="2"/>
+    <circle cx="1120" cy="380" r="1.5"/>
+    <circle cx="110" cy="480" r="1.5"/>
+    <circle cx="970" cy="565" r="2"/>
+    <circle cx="550" cy="570" r="1.5"/>
+  </g>
+
+  <!-- corner mark / subtle watermark stripe -->
+  <rect x="0" y="615" width="1200" height="15" fill="#E07A5F" fill-opacity="0.15"/>
+</svg>
