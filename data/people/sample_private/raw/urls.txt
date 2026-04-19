@@ -1,0 +1,2 @@
+# Optional: add public URLs the ETL should fetch.
+# Lines starting with # are ignored. Leave empty to skip the web step.
