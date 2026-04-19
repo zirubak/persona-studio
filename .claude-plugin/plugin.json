@@ -5,7 +5,7 @@
   "description": "Build AI persona avatars from files (private) or names (celebrity), then run virtual meetings and debates with tmux split-panes agent teams. Includes Ralph satisfaction-score loop and automatic Word/PowerPoint transcript generation.",
   "author": {
     "name": "Baek, JH",
-    "email": "zirubak@gmail.com"
+    "email": "379487+zirubak@users.noreply.github.com"
   },
   "repository": "https://github.com/zirubak/persona-studio",
   "license": "MIT",
