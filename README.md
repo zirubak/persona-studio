@@ -24,7 +24,7 @@
   <img src="https://img.shields.io/badge/no--coding--required-brightgreen" alt="No coding required" />
   <img src="https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white" alt="Python 3.11+" />
   <img src="https://img.shields.io/badge/tmux-required-1BB91F?logo=tmux&logoColor=white" alt="tmux required" />
-  <img src="https://img.shields.io/badge/version-0.4.0-purple" alt="v0.4.0" />
+  <img src="https://img.shields.io/badge/version-0.5.0-purple" alt="v0.5.0" />
 </p>
 
 <br/>
