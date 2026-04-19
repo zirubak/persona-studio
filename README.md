@@ -1,10 +1,15 @@
+<p align="center">
+  <img src="docs/assets/hero.png" alt="Persona Studio — AI avatars running a virtual meeting in parallel tmux panes" width="900" />
+</p>
+
 <h1 align="center">Persona Studio</h1>
 
 <p align="center">
-  <strong>Build AI avatars of real people (or yourself), then rehearse meetings with them before the real thing.</strong>
+  <strong>Rehearse your YC interview against AI avatars of the partners. Ten minutes. A hundred times. Before it counts.</strong>
 </p>
 
 <p align="center">
+  <a href="#yc-panel-demo--ninety-seconds-zero-setup"><strong>YC Panel Demo</strong></a> &middot;
   <a href="#quickstart"><strong>Quickstart</strong></a> &middot;
   <a href="#what-can-i-do-with-this"><strong>Examples</strong></a> &middot;
   <a href="#commands"><strong>Commands</strong></a> &middot;
@@ -15,6 +20,7 @@
 <p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License" /></a>
   <img src="https://img.shields.io/badge/claude--code-plugin-ff6f00" alt="Claude Code plugin" />
+  <img src="https://img.shields.io/badge/built_for-YC_applicants-ff6600" alt="Built for YC applicants" />
   <img src="https://img.shields.io/badge/no--coding--required-brightgreen" alt="No coding required" />
   <img src="https://img.shields.io/badge/python-3.11%2B-3776AB?logo=python&logoColor=white" alt="Python 3.11+" />
   <img src="https://img.shields.io/badge/tmux-required-1BB91F?logo=tmux&logoColor=white" alt="tmux required" />
@@ -25,15 +31,15 @@
 
 ## What is this?
 
-# Rehearse any meeting, with anyone, before it happens
+# The YC interview is ten minutes. Rehearse it a hundred times.
 
-Persona Studio is a **Claude Code plugin** that lets you:
+Persona Studio is a **Claude Code plugin** that builds AI avatars of Michael Seibel, Garry Tan, Jared Friedman — or whoever you're about to pitch to — from their public interviews, podcasts, and X threads. Then it sits them across the table from you in separate terminal panes and lets them interrupt, push back, and disagree with each other about your deck. Every re-run scores itself against your prep goals and retries until the pushback feels real. Walk in on interview day having already heard the hardest question forty times.
 
-1. **Build AI avatars** of real people from their interviews, podcasts, YouTube videos, or even just their name.
-2. **Run meetings or debates** where several avatars talk to each other (in separate terminal panes, all at once).
-3. **Automatically get Word and PowerPoint files** with the full transcript and a summary deck.
+You don't write any code. `/persona-studio:studio`, arrow keys, done. The rest of this README is proof.
 
-You don't need to write any code. You type a slash-command like `/persona-studio:studio`, answer a few questions with the arrow keys, and it does everything.
+<p align="center">
+  <img src="docs/assets/demo.gif" alt="Persona Studio demo — slash commands in action" width="800" />
+</p>
 
 <br/>
 
@@ -41,35 +47,89 @@ You don't need to write any code. You type a slash-command like `/persona-studio
 
 <table>
 <tr>
-<td><strong>Rehearse a pitch</strong></td>
-<td>Build avatars of your investor panel from their public interviews. Pitch to them. See their pushback. Fix your deck before the real meeting.</td>
+<td valign="top" width="28%"><strong>Pitch to the YC partner panel (before YC does)</strong><br/><sub>The flagship use-case</sub></td>
+<td>
+Build avatars of Michael Seibel, Garry Tan, and Jared Friedman from their public interviews, YC office-hours videos, and X posts — Celebrity mode, no files needed. Put them in three terminal panes and pitch your ten-minute interview. They interrupt you. They interrupt each other. One challenges your growth rate. Another asks why you, why now. The third pushes back on your TAM. Every round, the Ralph loop scores the session against your goals ("realistic objections", "actionable deck fixes", "partners stay in voice") and, if the score is below your bar, automatically re-runs with targeted feedback until it lands.<br/><br/>
+You get three files per run: a Word transcript of every question you couldn't answer, a PowerPoint summary of deck fixes with owners and deadlines, and a Markdown log you can diff across attempts. Iteration history is preserved in <code>iter-1/</code>, <code>iter-2/</code> folders so you can see your pitch tighten. By the real interview you've already heard the worst version of every question — forty times.<br/><br/>
+<strong>Why this works here and nowhere else:</strong> ChatGPT does single role-play, one voice at a time, no scoring, no re-run. Real YC interviews are three partners talking over each other in ten minutes. Split-panes reproduces the cross-talk. Ralph loop reproduces the prep cycle. The avatars are uncanny because the corpus is enormous.
+</td>
 </tr>
 <tr>
-<td><strong>Stress-test a decision</strong></td>
-<td>Build avatars of your CEO, CFO, and Head of Engineering. Propose a plan. Watch them argue. Adopt what survives.</td>
+<td valign="top"><strong>Stress-test a strategic decision</strong></td>
+<td>Build avatars of your CEO, CFO, and Head of Engineering from board decks and All-Hands recordings. Propose a plan. Watch them argue. Adopt what survives.</td>
 </tr>
 <tr>
-<td><strong>Prep for a job interview</strong></td>
-<td>Build an avatar of the hiring manager (from their LinkedIn/podcast). Role-play the interview. Get a scorecard at the end.</td>
+<td valign="top"><strong>Prep for a hiring panel</strong></td>
+<td>Build avatars of the hiring manager and two teammates from their LinkedIn, blog posts, and conference talks. Role-play the loop. Get a scorecard per interviewer.</td>
 </tr>
 <tr>
-<td><strong>Draft a strategy deck</strong></td>
-<td>Run a 3-person meeting about your strategy. The tool auto-generates a Word doc with the full conversation and a PowerPoint summary with action items.</td>
+<td valign="top"><strong>Draft a strategy deck from a meeting</strong></td>
+<td>Run a 3-person meeting on your strategy. You get a Word transcript and a PowerPoint summary with action items — already formatted, already assigned.</td>
 </tr>
 <tr>
-<td><strong>Write realistic dialogue</strong></td>
-<td>Novelists and screenwriters: build avatars of your characters and let them debate a plot point. Use the transcript as your draft.</td>
+<td valign="top"><strong>Write character dialogue that isn't flat</strong></td>
+<td>Novelists and screenwriters: build avatars of your characters, let them debate a plot point, use the transcript as first-draft dialogue.</td>
 </tr>
 </table>
 
 <br/>
 
+## YC Panel Demo — ninety seconds, zero setup
+
+**If you stop reading here, at least run this.**
+
+Three commands take you from zero to a scored mock YC interview against AI avatars of the partners:
+
+### 1. Build the three partner avatars (Celebrity mode, no upload required)
+
+```
+/persona-studio:create-persona garry_tan --mode celebrity
+/persona-studio:create-persona michael_seibel --mode celebrity
+/persona-studio:create-persona jared_friedman --mode celebrity
+```
+
+At each hint prompt, paste a one-paragraph description of the partner's public role and debate style. Three avatars, ninety seconds total, zero files required.
+
+> Don't want to wait? The repo already ships three ready-made sample avatars — `paul_graham`, `naval_ravikant`, `dhh` — that you can use immediately for a pattern-equivalent demo.
+
+### 2. Run the ten-minute panel with Ralph loop
+
+```
+/persona-studio:simulate-meeting-team-ralph
+```
+
+When the TUI prompts:
+
+- **Topic** — `10-minute YC S26 interview. Startup: [your one-liner]. MRR: [...]. MoM growth: [...]. Team: [...].`
+- **Participants** — `garry_tan, michael_seibel, jared_friedman`
+- **Goals (0–10, set bar at 8)**:
+  - Realistic partner pushback (no softballs)
+  - Concrete "fix this in the deck before demo day" list with owner + deadline
+  - Partners disagree with each other at least once per round
+  - Founder (you) gets interrupted mid-sentence at least twice
+
+The loop runs the interview, scores it against your goals, and if any criterion is below 8, re-runs with a sharper prompt on that specific weakness. Hard-capped at 5 iterations. Type `<stop>` any time.
+
+### 3. Or just open the menu
+
+```
+/persona-studio:studio
+```
+
+Arrow keys: **Run a simulation → Meeting (with Ralph loop) → pick the 3 partners → paste your topic → set goal score 8**. Same result, zero typing.
+
+Output lands in `simulations/10-minute-yc-s26-interview/<timestamp>.{md,docx,pptx}`. Read the Word doc on the way to the real interview.
+
+<br/>
+
 ## Who is this for?
 
-- **Non-technical founders, consultants, writers, researchers** — anyone who prepares for important conversations.
-- **Product managers & strategists** — rehearse stakeholder meetings.
-- **Anyone learning a second language** — practice arguing with native-speaker avatars before real meetings.
-- **Developers building with Claude Code** — a ready-made example of the Agent Teams + Ralph-loop pattern.
+- **YC S26 / W27 applicants — this is for you first.** You have ten minutes. You need forty reps. Nothing else gives you three partners in parallel at 2 AM the night before.
+- **Founders pitching investors** — any panel, any stage. The partner-rehearsal pattern generalizes.
+- **PMs & strategists** — stress-test stakeholder meetings before they happen.
+- **Hiring candidates** — rehearse the interview loop, one panel per pane.
+- **Writers & screenwriters** — your characters in separate panes, arguing about the plot.
+- **Developers building with Claude Code** — a ready-made reference for Agent Teams + Ralph loop + 3-axis schema validation.
 
 **If you can use a web browser and type a few commands into a terminal, you can use this.**
 
@@ -131,15 +191,24 @@ From here, use the arrow keys to navigate. **You don't need to type commands aga
 
 ## Your first 10 minutes
 
-Try this sample run — it ships with a ready-made sample avatar so you don't need to upload anything:
+The repo ships **four ready-made sample avatars** so you can run a full meeting without uploading anything:
+
+- `sample_private` — a fictional Korean engineering lead (shows the Private-mode format)
+- `paul_graham` — YC founder, essayist (built from public essays + podcasts)
+- `naval_ravikant` — AngelList founder, aphorist-philosopher
+- `dhh` — Rails creator, Basecamp co-founder, direct-style debater
+
+Try this:
 
 1. Launch: `/persona-studio:studio`
-2. Pick: **"Run a simulation"** → **"Debate"**
-3. Topic: `The future of remote work`
-4. Pick `sample_private` as one participant (it's included)
-5. Pick `<your-new-avatar>` as the other (create one first via the menu, or use two copies of `sample_private` for a quick test)
-6. Watch them argue for 3 rounds
-7. Find your transcript at `simulations/<topic>/<timestamp>.md` (plus matching `.docx` and `.pptx`)
+2. Pick: **"Run a simulation"** → **"Meeting (with Ralph loop)"**
+3. Topic: `Should a two-person team build a mobile app or a web app first in 2026?`
+4. Participants: pick `paul_graham`, `naval_ravikant`, `dhh` (they will disagree — that's the point)
+5. Goal score: `7`. Max iterations: `3`.
+6. Watch them argue in three panes for three rounds
+7. Find your transcript at `simulations/<topic>/<timestamp>.{md,docx,pptx}`
+
+Then try the YC panel demo above, then build your own avatar.
 
 <br/>
 

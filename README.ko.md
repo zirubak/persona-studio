@@ -1,7 +1,15 @@
+<p align="center">
+  <img src="docs/assets/hero.png" alt="Persona Studio — tmux split-panes에서 동시에 회의하는 AI 아바타들" width="900" />
+</p>
+
 <h1 align="center">Persona Studio</h1>
 
 <p align="center">
-  <strong>실제 사람(또는 나 자신)의 AI 아바타를 만들어, 실제 회의 전에 미리 리허설한다.</strong>
+  <strong>YC 인터뷰를 YC 파트너 AI 아바타들과 미리 리허설하세요. 10분짜리 인터뷰를, 100번 연습하고 가세요.</strong>
+</p>
+
+<p align="center">
+  <img src="docs/assets/demo.gif" alt="Persona Studio 데모" width="800" />
 </p>
 
 <p align="center">
