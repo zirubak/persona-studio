@@ -193,3 +193,6 @@ simulations/
 
 # Playwright MCP session artifacts (tab snapshots, console logs)
 .playwright-mcp/
+
+# bkit plugin local state (audit logs, runtime, checkpoints, session history)
+.bkit/
