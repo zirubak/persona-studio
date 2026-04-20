@@ -55,6 +55,10 @@ They ask their actual questions. They react to your answers. They disagree with 
 <td>Tomorrow you pitch an idea to your boss, the PM, and an engineer who always pushes back. Build avatars of the three from their Slack messages and last quarter's All-Hands recording. Pitch. Watch them argue. Fix the weak bits. Walk into the real meeting knowing exactly where pushback will come from.</td>
 </tr>
 <tr>
+<td valign="top"><strong>Brainstorming with smart friends</strong></td>
+<td>Stuck on a problem at 11 PM and everyone you'd ask is asleep? Open a room with avatars of three thinkers you trust — a founder you follow, a professor from college, a senior engineer whose blog you read. Throw the problem on the table. Let them riff from completely different angles. The friction between their perspectives surfaces ideas you wouldn't reach solo. The repo ships with <code>paul_graham</code>, <code>naval_ravikant</code>, and <code>dhh</code> ready to go — try them first.</td>
+</tr>
+<tr>
 <td valign="top"><strong>Difficult conversation rehearsal</strong></td>
 <td>Performance review, salary negotiation, breaking up with a client, giving tough feedback to a direct report. Build an avatar of the other person from emails and past 1:1 notes. Run the conversation before you have it. See how they'll likely react. Adjust your approach.</td>
 </tr>
