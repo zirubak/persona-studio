@@ -5,15 +5,10 @@
 <h1 align="center">Persona Studio</h1>
 
 <p align="center">
-  <strong>YC 인터뷰를 YC 파트너 AI 아바타들과 미리 리허설하세요. 10분짜리 인터뷰를, 100번 연습하고 가세요.</strong>
+  <strong>내일 회의를 오늘 미리 돌려보세요. 실제로 그 자리에 있을 사람들의 AI 아바타와 함께.</strong>
 </p>
 
 <p align="center">
-  <img src="docs/assets/demo.gif" alt="Persona Studio 데모" width="800" />
-</p>
-
-<p align="center">
-  <a href="#yc-패널-데모--90초-설정-0"><strong>YC 패널 데모</strong></a> &middot;
   <a href="#빠른-시작"><strong>빠른 시작</strong></a> &middot;
   <a href="#뭘-할-수-있나"><strong>사용 예시</strong></a> &middot;
   <a href="#커맨드-목록"><strong>커맨드</strong></a> &middot;
@@ -34,11 +29,13 @@
 
 ## 이게 뭐야?
 
-# YC 인터뷰는 10분이다. 100번 리허설하고 가라.
+# 내일 미팅이 불안해? 오늘 미리 돌려봐. 그 자리에 올 사람 전부랑.
 
-Persona Studio는 **Claude Code 플러그인**으로, Michael Seibel · Garry Tan · Jared Friedman(혹은 당신이 피칭할 어떤 사람이든)의 공개 인터뷰·팟캐스트·X 스레드에서 AI 아바타를 만듭니다. 세 사람을 각자 별도 터미널 창에 앉혀놓고, 당신의 피칭을 중간에 끊고, 서로 반박하고, 당신 덱의 허점을 찌르게 합니다. 매 세션은 당신이 세운 기준으로 자체 채점하고, 미달하면 약점에 집중한 프롬프트로 **자동 재실행**합니다. 실제 인터뷰 날에는 가장 날카로운 질문을 이미 40번 들어본 상태로 걸어 들어갑니다.
+**면접**이 있는데 처음 보는 세 사람이 면접관이세요? 그 사람들 LinkedIn과 팟캐스트 에피소드를 Persona Studio에 넣으세요. 면접 전날 밤, 그들이 실제로 던질 질문을 — 그들 목소리로 — 몇 번이고 들어볼 수 있습니다.
 
-**코드 한 줄 안 써요.** `/persona-studio:studio` 입력 → 화살표 키 → 끝.
+**팀 미팅**에서 팀장·PM·늘 반대하는 엔지니어한테 아이디어를 피칭해야 하나요? 세 사람의 Slack 메시지와 지난 분기 All-Hands 녹음으로 아바타를 만드세요. 피칭해보세요. 그들끼리 서로 끊고 반박하는 걸 보세요. 피칭 다듬고, 다시 돌려보세요.
+
+Persona Studio는 **Claude Code 플러그인**으로, 실제 사람의 공개/사적 자료를 그 사람처럼 말하는 AI 아바타로 변환합니다. 여러 아바타가 각자 터미널 pane에서 동시에 대화해요. 코드 한 줄 안 써요. `/persona-studio:studio` → 화살표 키 → 끝.
 
 <br/>
 
@@ -46,89 +43,41 @@ Persona Studio는 **Claude Code 플러그인**으로, Michael Seibel · Garry Ta
 
 <table>
 <tr>
-<td valign="top" width="28%"><strong>YC 파트너 패널 피칭 리허설</strong><br/><sub>대표 유스케이스</sub></td>
+<td valign="top" width="26%"><strong>면접 준비</strong><br/><sub>가장 흔한 유스케이스</sub></td>
 <td>
-Michael Seibel · Garry Tan · Jared Friedman의 공개 인터뷰·YC 오피스 아워 영상·X 포스트로 아바타 3개를 만듭니다 (Celebrity 모드, 자료 업로드 불필요). 3개 터미널 pane에 세 파트너를 앉혀놓고 10분 인터뷰를 피칭하세요. 그들이 당신을 끊습니다. 서로 끊습니다. 한 명은 성장률을 문제삼고, 한 명은 "why you, why now"를 파고들고, 한 명은 TAM에 반박합니다. 매 라운드 Ralph loop이 당신 기준("현실적 반박", "실행 가능한 덱 수정 사항", "파트너 말투 일관성")으로 채점하고, 미달 시 약점에 집중한 프롬프트로 자동 재실행합니다.<br/><br/>
-매 세션마다 3개 파일이 떨어집니다: 당신이 답 못한 모든 질문이 담긴 Word transcript, 담당·기한까지 붙은 덱 수정안 PowerPoint, 시도 간 diff 가능한 Markdown 로그. iteration 히스토리는 <code>iter-1/</code>, <code>iter-2/</code> 폴더에 보관돼 피칭이 어떻게 타이트해졌는지 볼 수 있습니다. 실제 인터뷰 날에는 가장 나쁜 버전의 질문을 40번 들어본 상태로 입장.<br/><br/>
-<strong>왜 이게 여기서만 되냐면:</strong> ChatGPT는 한 번에 한 명만 역할극, 채점 없음, 재실행 없음. 실제 YC 인터뷰는 세 파트너가 10분 내내 서로 겹쳐 말합니다. Split-panes가 그 cross-talk를 재현. Ralph loop이 prep cycle을 재현. 코퍼스가 방대해서 아바타가 소름 끼칩니다.
+3일 뒤 패널 면접이 있나요? 면접관들의 LinkedIn · 팟캐스트 에피소드 · 블로그 글을 폴더 하나에 넣으세요. Persona Studio가 아바타 3개를 만듭니다 — 채용 매니저, 시니어 엔지니어, 문화 적합성 면접관. 세 명이 동시에 각자 터미널 pane에서 모의 면접을 진행합니다.
+<br/><br/>
+그들은 실제로 할 질문을 던집니다. 당신 답변에 반응합니다. 당신이 적합한지 서로 의견이 갈립니다. 당신이 쩔쩔맨 모든 질문이 담긴 Word transcript와 면접관별 스코어카드 PowerPoint가 나옵니다. 내일 밤 피드백 반영해서 또 돌리고, 또 돌리세요 — 면접 당일에는 어떤 어려운 질문도 이미 40번 들어본 상태.
 </td>
 </tr>
 <tr>
-<td valign="top"><strong>전략 의사결정 스트레스 테스트</strong></td>
-<td>보드 덱·All-Hands 녹음으로 CEO·CFO·개발총괄 아바타를 만들고 제안을 던지세요. 그들끼리 반박·수용하게 놔두면, 살아남는 게 진짜 답입니다.</td>
+<td valign="top"><strong>팀 미팅 리허설</strong></td>
+<td>내일 팀장·PM·늘 반대하는 엔지니어한테 아이디어 피칭. 세 사람 Slack 메시지와 지난 분기 All-Hands 녹음으로 아바타 제작. 피칭. 그들끼리 반박하는 걸 관찰. 약점 수정. 실제 미팅 때는 반박이 어디서 나올지 이미 알고 입장.</td>
 </tr>
 <tr>
-<td valign="top"><strong>채용 패널 준비</strong></td>
-<td>채용 매니저와 팀원 2명의 LinkedIn · 블로그 · 컨퍼런스 톡으로 아바타를 만들어 loop 면접 역할극. 면접관별 스코어카드가 나옵니다.</td>
+<td valign="top"><strong>어려운 대화 연습</strong></td>
+<td>성과 평가, 연봉 협상, 클라이언트 이별, 팀원에게 쓴소리. 상대방의 이메일·과거 1:1 노트로 아바타 제작. 대화를 미리 돌려보고 예상 반응 확인. 접근법 조정.</td>
 </tr>
 <tr>
-<td valign="top"><strong>회의로부터 전략 덱 초안 뽑기</strong></td>
-<td>3인 회의 한 번 돌리세요. Word transcript + 담당·기한 붙은 PowerPoint 요약이 포맷 완료 상태로 나옵니다.</td>
+<td valign="top"><strong>이해관계자 스트레스 테스트</strong></td>
+<td>CEO·CFO·개발총괄 아바타 제작 (보드 덱·All-Hands 녹음). 제안 던지고 그들끼리 반박·수용하게 놔두기. 모든 반대 의견이 담긴 Word 문서 + 살아남은 액션 아이템 PowerPoint.</td>
 </tr>
 <tr>
-<td valign="top"><strong>평면적이지 않은 캐릭터 대사 쓰기</strong></td>
-<td>소설가·시나리오 작가: 캐릭터 아바타들을 만들어 플롯 포인트를 토론시키고, transcript를 1차 초고 대사로.</td>
+<td valign="top"><strong>현실감 있는 대사 쓰기</strong></td>
+<td>소설가·시나리오 작가: 캐릭터 백스토리로 아바타 만들고, 플롯 포인트 토론시키기. transcript를 1차 초고 대사로. 서로 다른 "목소리" 간의 마찰이 캐릭터를 살립니다.</td>
 </tr>
 </table>
 
 <br/>
 
-## YC 패널 데모 — 90초, 설정 0
-
-**여기서 그만 읽어도 이건 한 번 돌려보세요.**
-
-3개 커맨드로 AI 아바타 YC 파트너 패널 vs 나의 모의 인터뷰까지:
-
-### 1. 파트너 아바타 3개 만들기 (Celebrity 모드, 업로드 불필요)
-
-```
-/persona-studio:create-persona garry_tan --mode celebrity
-/persona-studio:create-persona michael_seibel --mode celebrity
-/persona-studio:create-persona jared_friedman --mode celebrity
-```
-
-힌트 프롬프트마다 파트너의 공개 역할과 토론 스타일을 한 문단으로 붙여넣기. 아바타 3개, 총 90초, 자료 0개.
-
-> 기다리기 싫다면 레포에 이미 샘플 아바타 3개가 포함돼 있습니다 — `paul_graham` · `naval_ravikant` · `dhh` — 동일 패턴으로 바로 시연 가능.
-
-### 2. Ralph loop으로 10분 패널 돌리기
-
-```
-/persona-studio:simulate-meeting-team-ralph
-```
-
-TUI 프롬프트:
-
-- **주제** — `10분 YC S26 인터뷰. 스타트업: [한 줄 설명]. MRR: [...]. MoM 성장률: [...]. 팀: [...].`
-- **참가자** — `garry_tan, michael_seibel, jared_friedman`
-- **목표 (0-10, 기준 8)**:
-  - 현실적 파트너 반박 (soft ball 없음)
-  - 담당·기한 붙은 "demo day 전 덱 수정" 리스트
-  - 파트너들끼리 라운드당 최소 1회 서로 반박
-  - 창업자(나)가 최소 2회 중간에 끊김
-
-Loop이 인터뷰를 돌리고 채점하고, 기준 하나라도 8 미만이면 그 약점에 집중한 프롬프트로 재실행. 최대 5회 하드 캡. `<stop>` 입력 시 즉시 탈출.
-
-### 3. 메뉴만 열어도 OK
-
-```
-/persona-studio:studio
-```
-
-화살표 키: **시뮬레이션 실행 → 회의 (Ralph loop) → 파트너 3명 선택 → 주제 붙여넣기 → 목표 점수 8**. 동일 결과, 타이핑 0.
-
-결과: `simulations/10-minute-yc-s26-interview/<timestamp>.{md,docx,pptx}`. 실제 인터뷰 가는 길에 Word 열어 읽기.
-
-<br/>
-
 ## 누구한테 좋나?
 
-- **YC S26 / W27 지원자 — 우선 당신.** 10분짜리를 40번 돌려야 합니다. 새벽 2시에 세 파트너 동시 리허설을 할 수 있는 건 여기뿐.
-- **투자자 피칭 중인 창업자** — 어떤 패널이든 어떤 스테이지든. 파트너 리허설 패턴은 일반화됨.
-- **PM·기획자** — 이해관계자 미팅이 일어나기 전에 스트레스 테스트.
-- **면접 지원자** — 면접 loop을 pane 하나당 패널 하나로 리허설.
-- **작가·시나리오 작가** — 캐릭터들을 별도 pane에 앉혀놓고 플롯을 토론시키기.
-- **Claude Code로 개발하는 사람** — Agent Teams + Ralph loop + 3축 스키마 검증의 실사용 레퍼런스.
+- **면접 보는 사람** — 패널 면접이 킬러 유스케이스. 면접관 아바타를 만들고, 밤새 리허설하고, 당일 침착하게 입장.
+- **중요한 미팅 앞둔 직장인** — 팀장·PM·늘 반대하는 엔지니어한테 피칭해야 할 때. 반박이 어디서 나올지 미리 알고 시작하세요.
+- **어려운 대화 미루는 사람** — 성과 평가, 연봉 협상, 클라이언트와의 이별, 팀원에게 쓴소리. 실제 대화 전에 상대방 예상 반응 리허설.
+- **창업자·PM** — 이해관계자 미팅, 투자자 피칭, 고객 통화. 둘 이상의 목소리가 중요한 자리 전부.
+- **작가·시나리오 작가** — 캐릭터들이 서로 겉도는 대화가 아니라 서로 맞부딪히는 대사. 마찰이 핵심.
+- **Claude Code 개발자** — Agent Teams + Ralph loop + split-panes의 실사용 레퍼런스.
 
 **웹 브라우저 쓸 줄 알고 터미널에 커맨드 몇 줄 칠 수 있으면 쓸 수 있어요.**
 
@@ -207,7 +156,7 @@ Claude Code 안에서:
 6. 3명이 3 pane에서 3라운드 토론
 7. 결과: `simulations/<주제>/<타임스탬프>.{md,docx,pptx}`
 
-그다음 위 YC 패널 데모를 시도해보고, 그다음 본인 아바타를 만들어 보세요.
+그다음 본인 아바타를 만들어 보세요 — Private 모드 (자료 업로드) 또는 Celebrity 모드 (이름 + 힌트만).
 
 <br/>
 
