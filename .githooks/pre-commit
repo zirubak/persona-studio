@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# Block commits that contain well-known secret patterns.
+# Defense-in-depth alongside GitHub push protection (server-side).
+
+set -euo pipefail
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$STAGED" ] && exit 0
+
+# Patterns kept as an array (whitespace inside a pattern stays intact).
+# Base64-encoded to avoid self-matching when this hook scans itself.
+# Decoded order:
+#   google_api  openai  anthropic  gh_pat  gh_oauth  gh_server  slack_bot  aws_access  pem_begin
+PATTERNS_B64=(
+  "QUl6YVN5W0EtWmEtejAtOV8tXXszM30="
+  "c2stW0EtWmEtejAtOV17MjAsfQ=="
+  "c2stYW50LVtBLVphLXowLTlfLV17NTAsfQ=="
+  "Z2hwX1tBLVphLXowLTldezM2fQ=="
+  "Z2hvX1tBLVphLXowLTldezM2fQ=="
+  "Z2hzX1tBLVphLXowLTldezM2fQ=="
+  "eG94Yi1bMC05XXsxMCx9LVswLTldezEwLH0tW0EtWmEtejAtOV17MjAsfQ=="
+  "QUtJQVswLTlBLVpdezE2fQ=="
+  "LS0tLS1CRUdJTiBbQS1aIF0qUFJJVkFURSBLRVktLS0tLQ=="
+)
+
+failed=0
+while IFS= read -r file; do
+  [ -z "$file" ] && continue
+  [ -f "$file" ] || continue
+  # scan only text-ish content
+  mime=$(file --mime-type -b "$file" 2>/dev/null || echo "")
+  case "$mime" in
+    text/*|application/json|application/xml|application/yaml|application/x-yaml|application/javascript|application/x-sh) ;;
+    *) continue ;;
+  esac
+  for b64 in "${PATTERNS_B64[@]}"; do
+    pat=$(printf '%s' "$b64" | base64 -d 2>/dev/null)
+    [ -z "$pat" ] && continue
+    if grep -EnH --binary-files=without-match "$pat" "$file" 2>/dev/null; then
+      echo "!! secret-looking pattern detected in $file"
+      failed=1
+    fi
+  done
+done <<< "$STAGED"
+
+if [ "$failed" -eq 1 ]; then
+  echo ""
+  echo "COMMIT BLOCKED: potential secret in staged changes."
+  echo "If this is a false positive, use 'git commit --no-verify'."
+  echo "If it is real, redact it AND revoke/rotate the key immediately."
+  exit 1
+fi
+
+exit 0
