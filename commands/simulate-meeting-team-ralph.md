@@ -34,6 +34,8 @@ A variant of the split-panes meeting that adds a **Ralph loop + user-satisfactio
 
 Pick participants → TeamCreate → spawn avatars → agenda rounds → user interruption window. The Tier-2 external-verification pass (Perplexity/WebSearch per `data/grounding-config.json`) from the team-mode template runs unchanged here — Ralph layers scoring on top; it does not replace the verification pipeline.
 
+The silent **`fact-checker` teammate spawn + CoVe routing** from the parent `/persona-studio:simulate-meeting-team` (extra `Task(name="fact-checker", ...)` + Step 3 step 5b SendMessage routing, `COVE_BUDGET_PER_AVATAR=5`) runs unchanged under Ralph scoring — each iteration re-spawns the fact-checker and resets `COVE_USED_<p>=0`.
+
 ## Step 4 — Ralph scoring + gating
 
 After the meeting ends:

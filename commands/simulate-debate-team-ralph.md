@@ -14,6 +14,8 @@ Same as `/persona-studio:simulate-debate-team` Step 0 plus the `/persona-studio:
 
 Same round loop and user interruption window as `/persona-studio:simulate-debate-team`, which also includes the Tier-2 external-verification pass (Perplexity/WebSearch) on each avatar's reply. The Ralph variant reuses that flow unchanged.
 
+The silent **`fact-checker` teammate spawn + CoVe routing** from the parent `/persona-studio:simulate-debate-team` (Step 2.5 spawn, Step 3.6 SendMessage routing, `COVE_BUDGET_PER_AVATAR=5`) runs unchanged under Ralph scoring — each iteration re-spawns the fact-checker and resets `COVE_USED_<p>=0`.
+
 ## Step 4 — Ralph scoring
 
 After N rounds complete:

@@ -50,7 +50,60 @@ the teammate SYSTEM prompt's PROTOCOL section:
 - Do NOT initiate turns on your own. Wait for dispatch.
 ```
 
+### Step 2.5 — Spawn silent fact-checker teammate
+
+In addition to the avatar teammates, spawn ONE extra teammate that never
+speaks in the debate but verifies claims for the facilitator:
+
+```
+Task(
+  subagent_type="general-purpose",
+  name="fact-checker",
+  team_name=team_id,
+  prompt="""
+    You are a SILENT fact-checker. You NEVER speak in the debate. Your job:
+
+    1. When the facilitator sends you a message containing an avatar turn
+       plus its EVIDENCE BANK, extract factual claims via:
+         .venv/bin/python -m persona_studio.grounding.verify_claims \\
+             --persona <avatar> --topic <topic> --only-high-risk
+       (the avatar slug and topic are in the facilitator's message header).
+
+    2. For each UNVERIFIABLE high-risk claim, run Chain-of-Verification
+       (CoVe) via the two cove.py CLI modes:
+         a. printf '%s' "<claim>" | .venv/bin/python \\
+                -m persona_studio.grounding.cove generate-question
+            (consume fields: question, anchor_type, anchor_value, claim_snippet)
+         b. Answer the generated question YOURSELF, strictly from the
+            EVIDENCE BANK the facilitator provided in the message. If the
+            evidence does not contain the answer, say exactly: unknown.
+         c. .venv/bin/python -m persona_studio.grounding.cove compare \\
+                --claim "<claim>" --answer "<your-answer>"
+            (consume fields: verdict, reason)
+
+    3. Reply to the facilitator ONLY with JSON, no prose, no preamble:
+         {"verdicts": [
+           {"claim": "...", "status": "consistent|discrepancy|inconclusive",
+            "reason": "..."}
+         ]}
+
+    4. Never post into the debate transcript. Never address the avatars.
+       Your only output channel is the JSON reply to the facilitator.
+  """,
+  run_in_background=true,
+)
+```
+
 ## Step 3 — Round loop
+
+Before entering the loop, initialize the CoVe budget counters (these live in
+facilitator state, NOT inside the fact-checker teammate):
+
+```bash
+COVE_BUDGET_PER_AVATAR=5
+# for each participant p:
+declare "COVE_USED_<p>=0"
+```
 
 For `r in 1..N`:
   For each participant `p` in declared order:
@@ -89,6 +142,49 @@ For `r in 1..N`:
        `[VERIFIED-EXTERNAL: ...]` or `[UNVERIFIED-EXTERNAL]` tag into the
        transcript line. Tool preference per `data/grounding-config.json`.
 
+    6. **Fact-checker CoVe routing** (team-mode equivalent of
+       `/persona-studio:simulate-debate` Step 3.6): skip this step entirely
+       if `COVE_USED_<p> >= COVE_BUDGET_PER_AVATAR` — annotate any remaining
+       UNVERIFIABLE high-risk claims in this turn as
+       `[UNVERIFIABLE — CoVe budget exceeded]` and move on.
+
+       Otherwise, dispatch the turn to the silent fact-checker:
+       ```
+       SendMessage(
+         to="fact-checker",
+         content="""
+           [avatar]: <p>
+           [topic]: <topic>
+           [turn]:
+           <reply text>
+
+           [EVIDENCE BANK]
+           <EVIDENCE_BANK_p used to dispatch this turn>
+         """,
+       )
+       ```
+       Wait up to 15 s for a JSON reply (bounded timeout; if no reply,
+       log `fact-checker timeout` and continue without blocking the round).
+
+       Parse the JSON `{"verdicts": [...]}`. For each verdict in order:
+         - `"discrepancy"`:
+           a. Post `[CHALLENGE — "<claim>" : <reason>]` into the main
+              transcript immediately after the flagged claim in `(Round r, <p>)`.
+           b. `SendMessage(to="avatar-<p>", content="Your statement
+              '<claim>' could not be verified. Evidence suggests <reason>.
+              Retract, cite, or restate with uncertainty within 15 seconds.
+              Under 200 characters.")`
+           c. Wait up to 15 s for the avatar's reply; append it to the
+              avatar's transcript block as a `[retract/defend]` line,
+              marking the original portion `(original, flagged)`.
+           d. Increment `COVE_USED_<p>` by 1.
+         - `"inconclusive"`: leave the Tier-2 annotation as-is. Do NOT post
+           a `[CHALLENGE]` tag. Increment `COVE_USED_<p>` by 1.
+         - `"consistent"`: no action. Increment `COVE_USED_<p>` by 1.
+
+       Stop calling the fact-checker for this avatar for the rest of the
+       simulation once `COVE_USED_<p>` reaches the budget.
+
   After each round, open a user interruption window (10 s):
   "Round <r> complete. Want to intervene? Type into any avatar pane, or leave a
   comment in the main pane and it will be factored into the next dispatch."
@@ -100,7 +196,9 @@ Main Claude writes a neutral summary:
 - Decisive divergence (whose argument split where)
 - Open questions
 
-Announce close to each teammate (SendMessage), then `TeamDelete`.
+Announce close to each teammate (SendMessage) — including the silent
+`fact-checker` (send it "Debate closed. No further verification required.")
+— then `TeamDelete`.
 
 ## Step 5 — Save transcript
 
