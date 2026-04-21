@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "persona-studio"
-version = "0.1.0"
-description = "ETL pipeline that turns heterogeneous source material into a single markdown corpus for persona synthesis."
+version = "0.6.0"
+description = "ETL pipeline that turns heterogeneous source material into a single markdown corpus for persona synthesis. Includes a three-tier factual-grounding layer (corpus grep + Perplexity/WebSearch + Chain-of-Verification) that reduces hallucinations during simulated debates and meetings."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
