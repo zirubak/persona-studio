@@ -17,16 +17,16 @@ Identical to `/persona-studio:simulate-meeting-team` Step 0:
 3. At least 2 `personas/*.md` files exist.
 4. Participant count ≤ 5 (debate panes get dense above that).
 
-Abort paths and AskUserQuestion fallback (`sequential로 전환`, `취소`) same as
+Abort paths and AskUserQuestion fallback (`Switch to sequential`, `Cancel`) same as
 meeting-team.
 
 ## Step 1 — Gather debate parameters
 
 AskUserQuestion:
-- `주제`: free text
-- `참가자`: multiSelect (2-5)
-- `라운드 수`: `3` / `4` / `5` (default 4)
-- `사용자 개입 모드`: `자유 개입` / `라운드 사이 개입`
+- `Topic`: free text
+- `Participants`: multiSelect (2-5)
+- `Rounds`: `3` / `4` / `5` (default 4)
+- `User interruption mode`: `Open intervention` / `Between rounds only`
 
 ## Step 2 — Create team and spawn teammates
 
@@ -37,7 +37,8 @@ the teammate SYSTEM prompt's PROTOCOL section:
 [PROTOCOL]
 - The facilitator (leader agent) will send you dispatch messages containing
   the prior transcript and the current round number.
-- Reply in character, under 300 characters, Korean 존댓말 by default.
+- Reply in character, under 300 characters. Default to English unless the
+  persona's Speech Patterns specify a different language or register.
 - For rounds after the first, YOU MUST explicitly reference at least one
   prior speaker's name and quote or paraphrase the point you are responding to.
 - The user may send messages directly. Treat as clarification/steering.
@@ -53,25 +54,25 @@ For `r in 1..N`:
        [Debate topic]: <topic>
        [Round]: <r> of <N>
        [Prior transcript, chronological]:
-       (라운드 1, <p1>): ...
-       (라운드 1, <p2>): ...
+       (Round 1, <p1>): ...
+       (Round 1, <p2>): ...
        ...
-       [Your turn]: 300자 이내로 앞 발언 중 가장 동의 또는 반대하는 지점을 지명해 응답하세요.
+       [Your turn]: In under 300 characters, name the prior speaker whose point you most agree or disagree with and respond to them directly.
        ```
     2. `SendMessage(to="avatar-<p>", content=<dispatch>)`
     3. Collect reply from teammate output.
-    4. Append to transcript as `(라운드 r, <p>): <reply>`.
+    4. Append to transcript as `(Round r, <p>): <reply>`.
 
   After each round, open a user interruption window (10 s):
-  "라운드 <r> 종료. 개입하시겠어요? 아바타 패널에 타이핑하거나, main
-  창에 코멘트를 남기면 다음 라운드 dispatch에 반영됩니다."
+  "Round <r> complete. Want to intervene? Type into any avatar pane, or leave a
+  comment in the main pane and it will be factored into the next dispatch."
 
 ## Step 4 — Synthesis
 
 Main Claude writes a neutral summary:
-- 핵심 합의점
-- 결정적 분기점 (누구의 주장이 어디서 갈라졌는지)
-- 미해결 질문
+- Points of agreement
+- Decisive divergence (whose argument split where)
+- Open questions
 
 Announce close to each teammate (SendMessage), then `TeamDelete`.
 
@@ -92,21 +93,21 @@ generated: <ISO8601>
 
 # Debate — <topic>
 
-## 라운드 1
+## Round 1
 ### <p1>
 > <reply>
 
 ### <p2>
 > <reply>
 
-## 라운드 2
+## Round 2
 ...
 
-## 종료 요약
+## Closing Summary
 
-### 핵심 합의점
-### 결정적 분기점
-### 미해결 질문
+### Points of agreement
+### Decisive divergence
+### Open questions
 ```
 
 Save to `simulations/<UTC-timestamp>_debate-team_<topic-slug>.md`.

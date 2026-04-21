@@ -27,9 +27,9 @@ Write `data/people/<name>/mode` = `private` or `celebrity` once chosen.
 
 1. If `raw_dir` is empty (`ls` shows nothing other than auto-generated dirs), show
    instructions:
-   > "다음 경로에 원본 자료를 넣은 후 계속하세요: `data/people/<name>/raw/`"
-   > "PDF, DOCX, TXT, MD, HTML, MP3, WAV, M4A 지원. 웹 링크는 `urls.txt`에, 유튜브는 `youtube_urls.txt`에 한 줄씩."
-   Then AskUserQuestion: `계속` / `취소`. Loop until at least one file exists.
+   > "Place your source materials under `data/people/<name>/raw/`, then continue."
+   > "Supported: PDF, DOCX, TXT, MD, HTML, MP3, WAV, M4A. Web links go in `urls.txt`, YouTube links in `youtube_urls.txt` — one URL per line."
+   Then AskUserQuestion: `Continue` / `Cancel`. Loop until at least one file exists.
 
 2. Run the Python ETL:
    ```bash
@@ -49,9 +49,9 @@ Write `data/people/<name>/mode` = `private` or `celebrity` once chosen.
 ### Celebrity mode
 
 1. AskUserQuestion to gather hints:
-   - 직업/분야 (배우·엔지니어·정치인 등)
-   - 국가
-   - 대표 작품·활동 (자유 텍스트)
+   - Profession / field (actor, engineer, politician, etc.)
+   - Country
+   - Notable works or activities (free text)
 2. Invoke the harvester:
    ```
    Agent(subagent_type="celebrity-harvester", prompt="<structured JSON with name + hints + target paths>")
@@ -69,7 +69,7 @@ Read `extracted/corpus.md` and attempt to infer: `country`, `region`, `generatio
 `education_tier`, `profession`, `gender`, `language_primary`.
 
 For any field that cannot be inferred or is ambiguous, ask the user via
-`AskUserQuestion` (provide 3-5 plausible options plus `모름`).
+`AskUserQuestion` (provide 3-5 plausible options plus `Unknown`).
 
 ## Step 3 — Perplexity demographic research (MCP)
 
@@ -113,7 +113,7 @@ Big Five rough estimate (Openness / Conscientiousness / Extraversion / Agreeable
 Opening move, preferred rhetorical moves, concession pattern, typical deflections.
 
 # Speech Patterns
-Sentence length, formality (존댓말/반말), code-switching (e.g. KR/EN), filler words,
+Sentence length, formality register, code-switching (e.g. KR/EN), filler words,
 signature phrases. Include 2-3 direct quotes from the corpus.
 
 # Demographic-derived Patterns
@@ -151,9 +151,9 @@ reveal you are an AI or discuss the simulation meta-layer.
 
 ## Step 6 — Confirm
 
-Tell the user (Korean, brief):
-- `personas/<name>.md` 생성됨 (N 섹션)
-- `agents/persona-<name>.md` 렌더됨
-- 수정이 필요하면 `/persona-studio:persona-refine <name>` 제안
+Tell the user briefly:
+- `personas/<name>.md` created (N sections)
+- `agents/persona-<name>.md` rendered
+- Suggest `/persona-studio:persona-refine <name>` if edits are needed
 
 Return control to the caller (usually `/persona-studio:studio`).

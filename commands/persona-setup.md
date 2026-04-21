@@ -18,9 +18,9 @@ One-shot environment bootstrap. Safe to run multiple times. Delegates to
    This creates `.venv/`, installs `-e ".[dev]"`, pre-downloads the whisper
    base model, and warns (but does not auto-install) missing ffmpeg.
 
-2. Interpret the exit code and surface the result to the user (Korean):
-   - `0` → "환경 준비 완료. `/persona-studio:studio`로 시작하세요."
-   - `2` → "Python 3.10 이상이 필요합니다. `brew install python@3.12` 후 재실행."
+2. Interpret the exit code and surface the result to the user:
+   - `0` → "Environment ready. Run `/persona-studio:studio` to start."
+   - `2` → "Python 3.10 or newer is required. Run `brew install python@3.12` and try again."
    - other → Show the last 20 lines of stdout and ask whether to retry.
 
 3. (Optional) If the user wants to confirm the install, run:

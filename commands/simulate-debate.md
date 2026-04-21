@@ -10,9 +10,9 @@ $ARGUMENTS
 
 Parse `<topic>` (quoted string) and participants (at least 2 persona slugs).
 If arguments are missing, ask via `AskUserQuestion`:
-- `주제`: free text
-- `참가자`: multiSelect from `personas/*.md` (2-5 selections)
-- `라운드 수`: `3` / `4` / `5` (default 4)
+- `Topic`: free text
+- `Participants`: multiSelect from `personas/*.md` (2-5 selections)
+- `Rounds`: `3` / `4` / `5` (default 4)
 
 Verify each participant has a matching `agents/persona-<slug>.md`. If
 any is missing, stop with an explanation.
@@ -29,8 +29,8 @@ For each participant, decide how to call them as an agent:
 - **Dynamic persona** (recommended default):
   `subagent_type="general-purpose"` + `Read(agents/persona-<slug>.md)`
   inlined into the Agent prompt. Works for both freshly-created personas and
-  pre-existing ones. Aligns with `~/.claude/CLAUDE.md` Agent Teams rule
-  ("모든 teammate는 반드시 `subagent_type="general-purpose"` 사용").
+  pre-existing ones. Aligns with the `~/.claude/CLAUDE.md` Agent Teams rule
+  (every teammate must use `subagent_type="general-purpose"`).
 
 Check each participant:
 ```bash
@@ -44,10 +44,10 @@ shape differs.
 
 ## Step 1 — Intro
 
-Main Claude acts as the moderator. Print in Korean:
-- 토론 주제
-- 참가자 목록
-- 진행 방식 (라운드로빈, N라운드, 각 발언 300자 이내)
+Main Claude acts as the moderator. Print:
+- Debate topic
+- Participant list
+- Flow (round-robin, N rounds, each reply under 300 characters)
 
 Initialize an empty transcript list.
 
@@ -80,17 +80,17 @@ For `r in 1..N`:
        Your role: participant
 
        [PRIOR TRANSCRIPT, chronological]
-       (라운드 1, <p1>): <quote>
-       (라운드 1, <p2>): <quote>
+       (Round 1, <p1>): <quote>
+       (Round 1, <p2>): <quote>
        ...
 
        [YOUR TURN]
-       300자 이내로, 앞 발언 중 가장 동의 또는 반대하는 지점을 지명해 응답하세요.
+       In under 300 characters, name the prior speaker whose point you most agree or disagree with and respond to them directly.
 
        [HARD RULES]
-       - 주제와 무관한 메타 발언 금지.
-       - 당신의 Speech Patterns 섹션 준수.
-       - Anchor quotes verbatim 반복 금지 — style reference only.
+       - No meta commentary unrelated to the topic.
+       - Stay within your Speech Patterns section.
+       - Do not repeat anchor quotes verbatim — use them only as style reference.
        ```
 
     **Native subagent alternative** (only if persona existed at session start):
@@ -100,15 +100,15 @@ For `r in 1..N`:
     Shorter prompt, but fails with "Agent type not found" for mid-session
     personas. See Step 0.5.
 
-    Append the reply to the transcript as `(라운드 r, p): <text>`.
+    Append the reply to the transcript as `(Round r, p): <text>`.
     Between turns give the user a one-line progress note (no full dump).
 
 ## Step 3 — Synthesis
 
 After all rounds, Main Claude writes a neutral summary with three subsections:
-- 핵심 합의점
-- 결정적 분기점 (누구의 주장이 어디서 갈라졌는지)
-- 미해결 질문
+- Points of agreement
+- Decisive divergence (whose argument split where)
+- Open questions
 
 ## Step 4 — Save transcript
 
@@ -125,35 +125,35 @@ generated: <ISO8601>
 
 # Transcript
 
-## 라운드 1
+## Round 1
 ### <p1>
 ...
 
-## 라운드 2
+## Round 2
 ...
 
-## 결론
-1-3 문장. 토론의 명확한 결론. 합의 실패 시 "합의 실패 — 이유 X"로 결론화.
+## Conclusion
+1-3 sentences. The debate's clear conclusion. If no consensus was reached, still conclude with "Consensus failed — reason X".
 
-## 만족도 평가
-- 점수: N/10
-- 기준별 (시작 시 사용자 입력):
-  - 기준 1: X/10
-  - 기준 2: X/10
-  - 기준 3: X/10
+## Satisfaction
+- Score: N/10
+- Per-criterion (user input at start):
+  - Criterion 1: X/10
+  - Criterion 2: X/10
+  - Criterion 3: X/10
 
-## 시스템 피드백
-- **Persona 측**: 개선 포인트
-- **프로세스 측**: 개선 포인트
-- **플랫폼 측**: 개선 포인트
+## System Feedback
+- **Persona side**: improvement points
+- **Process side**: improvement points
+- **Platform side**: improvement points
 
-## 종합 요약
-- 핵심 합의점
-- 결정적 분기점
-- 미해결 질문
+## Overall Summary
+- Points of agreement
+- Decisive divergence
+- Open questions
 ```
 
-**스키마 규칙**: `## 결론`, `## 만족도 평가`, `## 시스템 피드백` 3개 H2 섹션 필수.
+**Schema rule**: the three H2 sections `## Conclusion`, `## Satisfaction`, `## System Feedback` are mandatory.
 
 ## Step 5 — Generate Word (.docx) and PowerPoint (.pptx)
 
@@ -164,7 +164,7 @@ Auto-invoke after Step 4 saves the markdown:
 ```
 
 - `.docx`: full transcript archive (every round, every speaker, every quote).
-- `.pptx`: executive summary deck (title, participants, 핵심 합의점, 결정적 분기점, 미해결 질문).
+- `.pptx`: executive summary deck (title, participants, points of agreement, decisive divergence, open questions).
 
 On failure, surface last 20 lines of output and AskUserQuestion: retry / skip / continue without.
 

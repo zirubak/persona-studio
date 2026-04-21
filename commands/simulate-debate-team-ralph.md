@@ -1,27 +1,27 @@
 ---
-description: Split-panes 토론 + 만족도 Ralph loop. 3축 스키마 필수.
+description: Split-panes debate + satisfaction-score Ralph loop. Mandatory 3-axis schema.
 ---
 
 # /persona-studio:simulate-debate-team-ralph
 
-`/persona-studio:simulate-debate-team` + `/persona-studio:simulate-meeting-team-ralph` 의 스코어링·Ralph 루프 패턴 결합. 의제 대신 라운드 종료 후 만족도 평가.
+Combines `/persona-studio:simulate-debate-team` with the scoring + Ralph loop pattern from `/persona-studio:simulate-meeting-team-ralph`. Satisfaction is evaluated after the round loop instead of after an agenda.
 
 ## Step 0 — Pre-flight + TUI
 
-`/persona-studio:simulate-debate-team` Step 0 + `/persona-studio:simulate-meeting-team-ralph` TUI 입력 (목표 점수·iteration·3개 측정 기준).
+Same as `/persona-studio:simulate-debate-team` Step 0 plus the `/persona-studio:simulate-meeting-team-ralph` TUI inputs (target score, max iterations, 3 measurement criteria).
 
-## Step 1-3 — 토론 진행
+## Steps 1-3 — Debate execution
 
-`/persona-studio:simulate-debate-team` 과 동일한 라운드 루프 + 사용자 개입 윈도우.
+Same round loop and user interruption window as `/persona-studio:simulate-debate-team`.
 
-## Step 4 — Ralph 스코어링
+## Step 4 — Ralph scoring
 
-N 라운드 완료 → 3 기준별 점수 → 사용자 최종 판정 → 재실행/종료.
-재실행 시 현재 iter를 `iter-N` 서브폴더 보관, 개선된 dispatch prompt 로 새 TeamCreate.
+After N rounds complete → score each of the 3 criteria → user's final verdict → re-run or finish.
+On re-run, archive the current iteration as `iter-N`, then TeamCreate again with an improved dispatch prompt.
 
-## Step 5-7 — 저장·docs·보고
+## Steps 5-7 — Save, docs, report
 
-저장 경로: `simulations/<topic-slug>/<ts>_debate-team-ralph.(md|docx|pptx)`
-Markdown 프론트매터: `kind: debate-team-ralph`, `mode: split-panes-ralph`, `satisfaction_goal/final/criteria`, `iterations_run`, `early_stop`.
-본문 3축 섹션 의무: `## 결론`, `## 만족도 평가`, `## 시스템 피드백`.
-docs: `Skill('document-skills:docx')` + `Skill('document-skills:pptx')` 우선, python 폴백.
+Save path: `simulations/<topic-slug>/<ts>_debate-team-ralph.(md|docx|pptx)`
+Markdown frontmatter: `kind: debate-team-ralph`, `mode: split-panes-ralph`, `satisfaction_goal/final/criteria`, `iterations_run`, `early_stop`.
+Mandatory 3-axis body sections: `## Conclusion`, `## Satisfaction`, `## System Feedback`.
+Docs: prefer `Skill('document-skills:docx')` + `Skill('document-skills:pptx')`, fall back to Python.

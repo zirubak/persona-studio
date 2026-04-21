@@ -18,43 +18,43 @@ This works for both pre-existing and session-fresh personas, unlike native
 start.
 
 Ask how the agenda is composed (AskUserQuestion):
-- `자동 생성` — Main Claude drafts an agenda from the topic.
-- `직접 입력` — user dictates 3-7 agenda items.
+- `Auto-generate` — Main Claude drafts an agenda from the topic.
+- `Enter manually` — user dictates 3-7 agenda items.
 
 Record the final agenda as an ordered list.
 
 ## Step 1 — Facilitator sets the stage
 
-Main Claude, acting as the facilitator, announces (Korean):
-- 회의 주제
-- 참가자
-- 의제 목록
-- 진행 방식: 의제별로 퍼실리테이터가 특정 참가자를 지명 → 다른 참가자 중 반론/보완 1명 지명 → 의제 합의 요약
+Main Claude, acting as the facilitator, announces:
+- Meeting topic
+- Participants
+- Agenda list
+- Flow: for each agenda item the facilitator nominates one participant to lead, then picks one more for a rebuttal / complementary view, and closes the item with a consensus summary
 
 ## Step 2 — Agenda loop
 
 For each agenda item `i` in order:
-  a. Facilitator phrases a concrete opening question (≤ 2 문장).
+  a. Facilitator phrases a concrete opening question (≤ 2 sentences).
   b. Pick a `lead` participant most relevant to item `i` based on their persona's
      Knowledge Domains. Invoke:
      ```
-     Agent(subagent_type="persona-<lead>", prompt="의제 i에 대한 당신의 권고안을 300자 이내로 답하세요. 주제: <topic>. 의제: <item>.")
+     Agent(subagent_type="persona-<lead>", prompt="Give your recommendation for agenda item i in under 300 characters. Topic: <topic>. Item: <item>.")
      ```
   c. Pick one `challenger` participant with a contrasting Debate Style or
      overlapping domain. Invoke:
      ```
-     Agent(subagent_type="persona-<challenger>", prompt="lead의 답변을 읽고 300자 이내로 가장 약한 지점을 반박하거나 보완하세요. lead 답변: <quote>")
+     Agent(subagent_type="persona-<challenger>", prompt="Read the lead's answer and, in under 300 characters, rebut the weakest point or add what's missing. Lead's answer: <quote>")
      ```
   d. Optional: if either mentioned an absent domain expert among participants,
      invoke that third persona with a direct question (one exchange max).
-  e. Facilitator synthesizes a 2-3문장 결정 요약 + action item candidate.
+  e. Facilitator synthesizes a 2-3 sentence decision summary + action item candidate.
 
 ## Step 3 — Meeting close
 
 Main Claude writes:
-- 합의 요약 (bullet list)
-- 액션 아이템 (담당자 추정 + 기한은 TBD)
-- 후속 질문
+- Consensus summary (bullet list)
+- Action items (owner best-guess, due date TBD)
+- Follow-up questions
 
 ## Step 4 — Save transcript
 
@@ -69,45 +69,45 @@ agenda: [...]
 generated: <ISO8601>
 ---
 
-# 회의록
+# Minutes
 
-## 의제 1: <title>
-- **주도 발언 (<lead>)**: ...
-- **반론/보완 (<challenger>)**: ...
-- **추가 발언**: ...
-- **결정 요약**: ...
+## Agenda 1: <title>
+- **Lead (<lead>)**: ...
+- **Rebuttal / complement (<challenger>)**: ...
+- **Additional remarks**: ...
+- **Decision summary**: ...
 
-## 의제 2: ...
+## Agenda 2: ...
 
-## 결론
-모든 시뮬레이션은 반드시 이 섹션 포함. 회의가 도달한 하나의 명확한 결론을 1-3 문장으로. 합의 안 된 경우에도 "합의 실패 — 이유 X"로 결론화.
+## Conclusion
+Every simulation MUST include this section. Write the single clear conclusion the meeting reached in 1-3 sentences. If no consensus was reached, still conclude with "Consensus failed — reason X".
 
-## 만족도 평가
-- 점수: N / 10 (시작 시 사용자가 설정한 기준 대비)
-- 기준별 점수:
-  - 기준 1 (사용자 사전 입력): X/10
-  - 기준 2: X/10
-  - 기준 3: X/10
-- 미달 시 retry 여부 (Ralph 모드): yes/no
+## Satisfaction
+- Score: N / 10 (against the criteria the user set at the start)
+- Per-criterion score:
+  - Criterion 1 (user input): X/10
+  - Criterion 2: X/10
+  - Criterion 3: X/10
+- Retry on miss (Ralph mode only): yes/no
 
-## 시스템 피드백
-이 시뮬레이션을 더 잘하려면 개선 포인트 3-5개. 범주별:
-- **Persona 측**: 어떤 persona 섹션을 refine 해야 하나
-- **프로세스 측**: 의제 설계·진행 방식 개선점
-- **플랫폼 측**: 툴·환경·UX 개선점
+## System Feedback
+3-5 improvement points grouped by category:
+- **Persona side**: which persona sections should be refined
+- **Process side**: agenda design / facilitation improvements
+- **Platform side**: tooling / environment / UX improvements
 
-### 합의 · 액션 · 후속 질문
-합의된 action items (표):
-| # | 담당 | 내용 | 기한 |
-|---|------|------|------|
+### Consensus · Actions · Follow-ups
+Action items table:
+| # | Owner | Content | Due |
+|---|-------|---------|-----|
 
-미결 질문:
+Open questions:
 - ...
 ```
 
-**스키마 규칙 (의무)**:
-- `## 결론`, `## 만족도 평가`, `## 시스템 피드백` **3개 H2 섹션 반드시 포함**. 빠지면 docs 파이프라인이 경고 + 사용자 재작성 요청.
-- `## 종료 요약` 은 위 3개와 `합의·액션·후속 질문` 서브섹션을 포괄하는 상위 그룹이거나, 각 섹션이 H2로 독립 — 두 패턴 모두 허용.
+**Schema rule (mandatory)**:
+- The three H2 sections `## Conclusion`, `## Satisfaction`, `## System Feedback` MUST be present. If missing, the docs pipeline warns and asks the user to rewrite.
+- `## Closing Summary` is an optional parent section that may wrap the three sections above together with the `Consensus · Actions · Follow-ups` subsection, OR each of the three may stand as an independent H2 — both patterns are valid.
 
 ## Step 5 — Generate Word (.docx) and PowerPoint (.pptx)
 
@@ -119,8 +119,8 @@ Auto-invoke the docs pipeline right after the markdown transcript is saved:
 
 Expected output: same directory, `<stem>.docx` and `<stem>.pptx`.
 
-- `.docx`: full-fidelity archive — every 발언 원문, 퍼실리테이터 질문·요약, 의제·종료 요약 전부. 사내 회의록 또는 기록물 배포용.
-- `.pptx`: executive-summary deck — 표지 + 의제 overview + 의제별 핵심 1-line + 종료 합의 + 액션 아이템. 사내 공유·Follow-up 발표용.
+- `.docx`: full-fidelity archive — every utterance verbatim, facilitator questions and summaries, full agenda and closing summary. For internal minutes or archival distribution.
+- `.pptx`: executive-summary deck — cover + agenda overview + one-line highlight per agenda item + closing consensus + action items. For internal sharing / follow-up presentations.
 
 If the script fails, surface the last 20 lines of its output and ask the user
 (AskUserQuestion) whether to retry, skip, or open the markdown directly.
@@ -128,8 +128,8 @@ If the script fails, surface the last 20 lines of its output and ask the user
 ## Step 6 — Report to user
 
 Show three paths:
-- `simulations/<stem>.md` (markdown 원본)
-- `simulations/<stem>.docx` (전문 아카이브)
-- `simulations/<stem>.pptx` (요약 배포)
+- `simulations/<stem>.md` (markdown source)
+- `simulations/<stem>.docx` (full archive)
+- `simulations/<stem>.pptx` (summary deck)
 
 Then return control to the caller (usually `/persona-studio:studio`).

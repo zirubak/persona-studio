@@ -15,12 +15,12 @@ Read `personas/<name>.md`. Confirm it exists and extract the section headings.
 ## Step 1 — Collect feedback
 
 AskUserQuestion:
-- `어느 섹션을 수정할까요?` → multiSelect across detected headings
+- `Which sections would you like to edit?` → multiSelect across detected headings
   (Background / Personality / Knowledge Domains / Debate Style / Speech Patterns /
    Demographic-derived Patterns / Quoted Evidence).
 
 For each selected section, ask a free-text follow-up:
-- `이 섹션에서 실제 인물과 어떤 점이 다릅니까? 구체적인 관찰/예시를 알려주세요.`
+- `How does this section differ from the real person? Please share concrete observations or examples.`
 
 ## Step 2 — Apply edits
 

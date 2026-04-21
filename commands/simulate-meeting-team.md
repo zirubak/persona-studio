@@ -16,13 +16,13 @@ Run these checks in order. Abort with a clear user message if any fails.
    ```bash
    which tmux || echo "NO_TMUX"
    ```
-   If `NO_TMUX`: tell user (Korean) "tmux가 필요합니다. `brew install tmux` 후 새 터미널에서 다시 시도하세요." and stop.
+   If `NO_TMUX`: tell the user "tmux is required. Run `brew install tmux` and try again in a new terminal." and stop.
 
 2. **Inside a tmux session AND teammate split-panes mode active?**
    - Check `$TMUX` env var (tmux session indicator).
    - Try a probe Task call with `team_name="probe-check"` and a trivial prompt. If Claude Code returns an error about in-process mode or missing teammate runtime, we are NOT in split-panes. Clean up probe team via `TeamDelete` if created.
-   - If check fails: tell user "현재 세션은 in-process 모드입니다. 새 터미널에서 `claude --teammate-mode split-panes` 로 재시작 후 다시 `/persona-studio:studio` → 이 메뉴로 진입하세요."
-   - Offer AskUserQuestion: `세션 재시작 안내 자세히 보기` / `sequential 모드로 전환 (/persona-studio:simulate-meeting)` / `취소`.
+   - If the check fails, tell the user "This session is in in-process mode. Restart in a new terminal with `claude --teammate-mode split-panes`, then relaunch `/persona-studio:studio` and reach this menu again."
+   - Offer AskUserQuestion: `Show detailed restart instructions` / `Switch to sequential mode (/persona-studio:simulate-meeting)` / `Cancel`.
 
 3. **Participant files exist?**
    Glob `personas/*.md`, confirm at least 2 exist. AskUserQuestion to pick 2-6 participants (multiSelect).
@@ -32,10 +32,10 @@ Run these checks in order. Abort with a clear user message if any fails.
 ## Step 1 — Gather meeting parameters
 
 AskUserQuestion:
-- `주제`: free text
-- `참가자`: multiSelect from `personas/*.md` (2-6 selections, no duplicates)
-- `의제 구성`: `자동 생성` / `직접 입력`
-- `사용자 개입 모드`: `자유 개입 (언제든 패널에 타이핑 가능)` / `의제 사이 개입 (퍼실리테이터가 명시적으로 호출)`
+- `Topic`: free text
+- `Participants`: multiSelect from `personas/*.md` (2-6 selections, no duplicates)
+- `Agenda composition`: `Auto-generate` / `Enter manually`
+- `User interruption mode`: `Open (type in any pane at any time)` / `Between agenda items (explicit facilitator invitation only)`
 
 Normalize slug for save path: `simulations/<UTC-timestamp>_meeting-team_<topic-slug>.md`.
 
@@ -61,7 +61,8 @@ For each participant `p`:
 
    [PROTOCOL]
    - The facilitator (leader agent) will send you questions via SendMessage.
-   - Reply in character, under 300 characters, Korean 존댓말 (unless persona spec differs).
+   - Reply in character, under 300 characters. Default to English unless the
+     persona's Speech Patterns specify a different language or register.
    - The user may also send messages directly. Treat user messages as
      clarification or steering; incorporate without breaking character.
    - Do NOT initiate turns on your own. Wait for messages.
@@ -77,7 +78,7 @@ For each participant `p`:
    )
    ```
 
-After all teammates spawned, tell the user: "<N>명의 아바타가 각자의 패널에서 대기 중입니다. 의제를 시작하겠습니다. 중간에 아바타 패널에 직접 타이핑하시거나, '<aside>'을 입력하시면 퍼실리테이터에게 메시지가 전달됩니다."
+After all teammates spawned, tell the user: "<N> avatars are standing by in their own panes. Starting the agenda. You can type directly into any avatar's pane during the meeting, or type `<aside>` here to send a message to the facilitator."
 
 ## Step 3 — Agenda loop
 
@@ -100,29 +101,30 @@ For each agenda item `i`:
    ```
    SendMessage(
      to="avatar-<challenger>",
-     content=<lead's reply + "반박 또는 보완해주세요, 300자 이내">,
+     content=<lead's reply + "Rebut or add what's missing in under 300 characters.">,
    )
    ```
 
 4. **User interruption window**: between dispatches, pause 10-15 seconds with a
-   visible prompt: "의제 i 요약하기 전에 개입하시겠어요? 아바타 패널에 직접
-   타이핑하거나, 여기에 (main) 코멘트를 남기면 퍼실리테이터가 다음 지명에
-   반영합니다." If user types in a pane, their message is delivered to that
-   teammate automatically (tmux + teammate runtime handles this).
+   visible prompt: "Want to jump in before we summarize agenda i? Type directly
+   into any avatar pane, or leave a comment in this (main) pane and the
+   facilitator will factor it into the next nomination." If user types in a
+   pane, their message is delivered to that teammate automatically (tmux +
+   teammate runtime handles this).
 
-5. Facilitator synthesizes a 2-3 문장 결정 요약 + 액션 아이템 후보.
+5. Facilitator synthesizes a 2-3 sentence decision summary + action item candidate.
 
 ## Step 4 — Close
 
 Facilitator writes:
-- 합의 (bullet list)
-- 액션 아이템 (담당·기한 표)
-- 후속 질문
+- Consensus (bullet list)
+- Action items (owner / due date table)
+- Follow-up questions
 
 Announce close in each teammate's context:
 ```
 for p in participants:
-    SendMessage(to="avatar-<p>", content="오늘 회의는 여기서 마칩니다. 의견 감사합니다.")
+    SendMessage(to="avatar-<p>", content="This meeting is closing. Thanks for your input.")
 ```
 
 Then `TeamDelete(team_name=team_id)` to free the panes.
@@ -135,7 +137,7 @@ using the structure required by `scripts/simulation_to_docs.py`:
 - YAML frontmatter: `kind: meeting-team`, `topic`, `participants`, `agenda`,
   `generated`, plus `mode: split-panes` and `user_interruptions: N` if user
   intervened.
-- H1 title, H2 per agenda item + `## 종료 요약`, H3 per speaker role.
+- H1 title, H2 per agenda item + `## Closing Summary`, H3 per speaker role.
 
 Save to `simulations/<UTC-timestamp>_meeting-team_<topic-slug>.md`.
 
