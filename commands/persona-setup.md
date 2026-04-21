@@ -31,6 +31,32 @@ One-shot environment bootstrap. Safe to run multiple times. Delegates to
 
    Expect 111+ passed. If failures, surface them and ask for next action.
 
+4. **Factual-grounding Tier-2 detection** (idempotent — writes
+   `data/grounding-config.json` on first run, no-op if already current).
+   Detect which external-verification tool is available in this session:
+   - If the tool list visible to Claude Code includes any
+     `mcp__perplexity__*` tool, the Tier-2 tool is `perplexity`.
+   - Else if `WebSearch` is available (it always is, built-in), Tier-2 is
+     `websearch`.
+   - Else Tier-2 is `none` (Tier-1 corpus-grep only).
+
+   Persist the detection and announce it to the user:
+
+   ```bash
+   .venv/bin/python - <<'PY'
+   from persona_studio.grounding.config import GroundingConfig, save_config
+   # Claude Code passes the detected tool name as an env var (see below)
+   import os
+   tool = os.environ.get("PERSONA_STUDIO_TIER2", "websearch")
+   save_config(GroundingConfig.now(tool))
+   print(f"Factual grounding: Tier-1 (corpus) + Tier-2 ({tool})")
+   PY
+   ```
+
+   Alternative inline: read the existing config (`load_config()`); if it
+   matches the currently detected tool, skip the rewrite. Always print the
+   one-line disclosure so the user knows which Tier-2 tool is active.
+
 ## Non-goals
 
 - Do NOT auto-install ffmpeg or other system packages. The bootstrap prints the

@@ -128,7 +128,40 @@ For `r in 1..N`:
     personas. See Step 0.5.
 
     Append the reply to the transcript as `(Round r, p): <text>`.
-    Between turns give the user a one-line progress note (no full dump).
+
+    3.5. **Tier-2 external verification pass** (non-blocking, one pass per turn):
+       Feed the just-produced reply through the Tier-1 verifier CLI and, for
+       each UNVERIFIABLE high-risk claim, call the configured Tier-2 tool.
+
+       ```bash
+       # Get JSON list of claims with their Tier-1 verdicts
+       CLAIMS_JSON=$(echo "<reply text>" | .venv/bin/python -m persona_studio.grounding.verify_claims \
+           --persona <p> --topic "<topic>" --only-high-risk)
+
+       # Load Tier-2 tool (perplexity / websearch / none)
+       TIER2=$(.venv/bin/python -c "from persona_studio.grounding.config import load_config; c = load_config(); print(c.tier2_tool if c else 'websearch')")
+       ```
+
+       For each claim in `CLAIMS_JSON` where `status == "unverifiable"` and
+       `is_high_risk == true`:
+
+       1. If `TIER2 == "perplexity"` AND `mcp__perplexity__search` is
+          available: call `mcp__perplexity__search(query=<claim.text>)`.
+          If a credible source comes back (non-empty result, URL present),
+          produce `[VERIFIED-EXTERNAL: perplexity <url>]` via
+          `annotator.format_external_verified(<url>, "perplexity")`.
+          Otherwise produce `[UNVERIFIED-EXTERNAL]`.
+       2. Else (`TIER2 == "websearch"` or perplexity absent): call built-in
+          `WebSearch(query=<claim.text>)`. Same verdict mapping.
+       3. Else (`TIER2 == "none"`): skip — leave the Tier-1 annotation.
+
+       Insert the resulting tag into the transcript line immediately after
+       the claim sentence (use the claim's span from the JSON to locate).
+       Do NOT re-run Tier-2 on claims already annotated SUPPORTED or
+       UNSUPPORTED by Tier-1 — those have authoritative corpus-level
+       verdicts.
+
+       Between turns give the user a one-line progress note (no full dump).
 
 ## Step 3 — Synthesis
 

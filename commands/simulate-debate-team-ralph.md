@@ -12,7 +12,7 @@ Same as `/persona-studio:simulate-debate-team` Step 0 plus the `/persona-studio:
 
 ## Steps 1-3 — Debate execution
 
-Same round loop and user interruption window as `/persona-studio:simulate-debate-team`.
+Same round loop and user interruption window as `/persona-studio:simulate-debate-team`, which also includes the Tier-2 external-verification pass (Perplexity/WebSearch) on each avatar's reply. The Ralph variant reuses that flow unchanged.
 
 ## Step 4 — Ralph scoring
 

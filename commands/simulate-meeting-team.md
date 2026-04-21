@@ -128,7 +128,14 @@ For each agenda item `i`:
    pane, their message is delivered to that teammate automatically (tmux +
    teammate runtime handles this).
 
-5. Facilitator synthesizes a 2-3 sentence decision summary + action item candidate.
+5. **Tier-2 external verification pass** on both lead and challenger replies
+   (same pattern as `/persona-studio:simulate-debate` Step 3.5). Pipe each reply
+   through `python -m persona_studio.grounding.verify_claims --only-high-risk`;
+   for UNVERIFIABLE high-risk claims call Perplexity (if MCP available) or
+   WebSearch; insert `[VERIFIED-EXTERNAL]` / `[UNVERIFIED-EXTERNAL]` tags
+   inline. Tool preference from `data/grounding-config.json`.
+
+6. Facilitator synthesizes a 2-3 sentence decision summary + action item candidate.
 
 ## Step 4 — Close
 

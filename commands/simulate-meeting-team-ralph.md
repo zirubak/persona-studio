@@ -32,7 +32,7 @@ A variant of the split-panes meeting that adds a **Ralph loop + user-satisfactio
 
 ## Steps 1-3 — Same flow as `/persona-studio:simulate-meeting-team`
 
-Pick participants → TeamCreate → spawn avatars → agenda rounds → user interruption window.
+Pick participants → TeamCreate → spawn avatars → agenda rounds → user interruption window. The Tier-2 external-verification pass (Perplexity/WebSearch per `data/grounding-config.json`) from the team-mode template runs unchanged here — Ralph layers scoring on top; it does not replace the verification pipeline.
 
 ## Step 4 — Ralph scoring + gating
 

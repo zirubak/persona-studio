@@ -283,6 +283,17 @@ Claude Code 안에서:
 
 <br/>
 
+## 사실 기반 (환각 감소)
+
+모든 시뮬레이션은 기본적으로 2-tier grounding layer 를 실행합니다:
+
+- **Tier-1 (항상 켜짐, 오프라인)** — 각 아바타가 말하기 전에 그 아바타의 코퍼스에서 검색된 evidence 로 프롬프트가 보강됩니다. 회의 종료 후, 모든 claim 이 코퍼스 와 매칭되어 `[SUPPORTED: source:line]` / `[UNSUPPORTED]` / `[UNVERIFIABLE]` / `[OPINION]` 태그가 붙습니다. transcript 끝에 `## Factual Grounding` 테이블이 아바타별 hallucination rate 를 요약합니다.
+- **Tier-2 (외부, 선택)** — Tier-1 이 놓친 claim 을 Perplexity MCP (설치되어 있으면) 또는 내장 WebSearch (항상 사용 가능) 로 재확인합니다. 외부적으로 검증된 claim 은 `[VERIFIED-EXTERNAL: 도구 url]` 태그, 확인 불가 는 `[UNVERIFIED-EXTERNAL]`. **Perplexity MCP 는 선택사항 — 대부분의 사용자는 없고, WebSearch fallback 으로 충분합니다.**
+
+Ralph loop 은 아바타별 grounding score 를 기본 4번째 criterion (goal 8/10) 으로 읽어서, hallucinate 가 심한 경우 자동으로 re-run 을 트리거합니다. 순수 brainstorming 세션처럼 hallucination 이 필요하면 `/persona-studio:studio` 메뉴에서 전체 레이어를 끌 수 있습니다.
+
+<br/>
+
 ## 뭐가 만들어지나?
 
 모든 회의는 `simulations/<주제>/`에 세 파일을 남깁니다:

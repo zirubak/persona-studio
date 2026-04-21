@@ -59,7 +59,13 @@ For each agenda item `i` in order:
      ```
   d. Optional: if either mentioned an absent domain expert among participants,
      invoke that third persona with a direct question (one exchange max).
-  e. Facilitator synthesizes a 2-3 sentence decision summary + action item candidate.
+  e. **Tier-2 external verification pass** for both lead and challenger replies:
+     Same pattern as `/persona-studio:simulate-debate` Step 3.5 — pipe each reply
+     through `python -m persona_studio.grounding.verify_claims` with
+     `--only-high-risk`, call the Tier-2 tool (Perplexity if available,
+     WebSearch otherwise) for any UNVERIFIABLE high-risk claims, and insert
+     `[VERIFIED-EXTERNAL: ...]` or `[UNVERIFIED-EXTERNAL]` tags inline.
+  f. Facilitator synthesizes a 2-3 sentence decision summary + action item candidate.
 
 ## Step 3 — Meeting close
 
