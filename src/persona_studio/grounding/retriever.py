@@ -14,10 +14,18 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 from pathlib import Path
 from typing import Iterable, Protocol
 
 from persona_studio.grounding.types import EvidenceChunk
+
+
+# Session-scoped memo of persona slugs already warned about, so users debugging
+# "why is my score 0" get exactly one stderr line per missing persona rather
+# than one per turn. Cleared automatically when the process restarts.
+_WARNED_MISSING: set[str] = set()
+_WARNED_EMPTY: set[str] = set()
 
 
 # --- Public API ---------------------------------------------------------------
@@ -73,10 +81,39 @@ def retrieve_evidence(persona: str, topic: str, k: int = 8) -> list[EvidenceChun
 
     data_dir = find_persona_data_dir(persona)
     if data_dir is None:
+        if persona not in _WARNED_MISSING:
+            print(
+                f"[grounding] no corpus found for persona '{persona}' — "
+                "Tier-1 verification will return UNVERIFIABLE for every claim. "
+                "Run /persona-studio:create-persona to build a corpus.",
+                file=sys.stderr,
+            )
+            _WARNED_MISSING.add(persona)
         return []
 
     extracted = data_dir / "extracted"
     if not extracted.exists():
+        if persona not in _WARNED_EMPTY:
+            print(
+                f"[grounding] corpus empty for persona '{persona}' — no extracted/ "
+                "directory. Run `python -m persona_studio.cli extract {persona}`.",
+                file=sys.stderr,
+            )
+            _WARNED_EMPTY.add(persona)
+        return []
+
+    # Warn about empty/missing corpus BEFORE tokenizing — the user needs this
+    # hint even when their topic string happens to tokenize to empty.
+    corpus_path = extracted / "corpus.md"
+    if not corpus_path.exists() or corpus_path.stat().st_size == 0:
+        if persona not in _WARNED_EMPTY:
+            print(
+                f"[grounding] corpus empty for persona '{persona}' — "
+                "corpus.md is missing or zero bytes. Tier-1 scores will be 0 "
+                "until the ETL populates extracted/corpus.md.",
+                file=sys.stderr,
+            )
+            _WARNED_EMPTY.add(persona)
         return []
 
     query_tokens = _tokenize(topic)
