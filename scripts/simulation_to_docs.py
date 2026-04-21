@@ -415,19 +415,25 @@ def _parse_md_table(text: str) -> list[dict[str, str]]:
 # --- 3-axis schema validation --------------------------------------------
 
 
-REQUIRED_AXES: tuple[str, ...] = (
-    "결론",
-    "만족도 평가",
-    "시스템 피드백",
+# Section-name harmonization: accept either Korean or English canonical names.
+# Commands used to emit Korean-only headings; commit 3fe5e2b shipped English
+# headings for non-Korean users. The validator must accept both so neither
+# transcript form triggers a false-positive missing-axis warning.
+REQUIRED_AXES: tuple[tuple[str, ...], ...] = (
+    ("결론", "Conclusion"),
+    ("만족도 평가", "Satisfaction"),
+    ("시스템 피드백", "System Feedback"),
 )
 
 
 def validate_three_axis_schema(transcript: Transcript) -> list[str]:
-    """Return the list of missing mandatory axes.
+    """Return the list of missing mandatory axes (canonical KO names).
 
-    Every simulation transcript must include `## 결론`, `## 만족도 평가`, and
-    `## 시스템 피드백` as H2 sections (or as subsections under `## 종료 요약`).
-    An empty return value means the schema is satisfied.
+    Every simulation transcript must include a Conclusion, Satisfaction, and
+    System Feedback H2 section (or as subsections under `## 종료 요약` /
+    `## Closing Summary`). Either Korean or English canonical names are
+    accepted — the return list uses the KO name as the canonical key so
+    downstream consumers see a stable identifier.
     """
     titles = [s.title for s in transcript.sections]
     if transcript.closing is not None:
@@ -440,13 +446,33 @@ def validate_three_axis_schema(transcript: Transcript) -> list[str]:
             closing_body += "\n".join(speaker.lines) + "\n"
 
     missing: list[str] = []
-    for axis in REQUIRED_AXES:
-        if axis in flat:
+    for axis_variants in REQUIRED_AXES:
+        if any(variant in flat for variant in axis_variants):
             continue
-        if axis in closing_body:
+        if any(variant in closing_body for variant in axis_variants):
             continue
-        missing.append(axis)
+        missing.append(axis_variants[0])  # canonical KO label
     return missing
+
+
+def run_factual_audit_if_possible(transcript_path: Path) -> None:
+    """Best-effort post-process: append `## Factual Grounding` section.
+
+    Silently skips if the grounding package is unavailable or any exception
+    occurs — this is a non-critical enhancement and should never block docs
+    generation. Runs after 3-axis validation.
+    """
+    try:
+        # Local import so simulation_to_docs.py remains usable even if the
+        # grounding package is missing (e.g., older checkouts, partial install).
+        from persona_studio.grounding.audit import audit_transcript
+
+        audit_transcript(transcript_path)
+    except Exception as err:
+        print(
+            f"[INFO] factual-grounding audit skipped: {err}",
+            file=sys.stderr,
+        )
 
 
 # --- main -----------------------------------------------------------------
@@ -481,12 +507,18 @@ def main(argv: list[str] | None = None) -> int:
     if missing_axes:
         msg = (
             f"[WARN] transcript missing mandatory axes: {missing_axes}. "
-            "Every simulation must include `## 결론`, `## 만족도 평가`, `## 시스템 피드백`."
+            "Every simulation must include Conclusion / Satisfaction / "
+            "System Feedback (KO or EN headings accepted)."
         )
         print(msg, file=sys.stderr)
         if args.strict:
             print("[ERROR] --strict enabled; aborting.", file=sys.stderr)
             return 2
+
+    # Append factual-grounding audit section to the transcript (in-place).
+    # Re-parse after audit so docx/pptx include the new section.
+    run_factual_audit_if_possible(args.input)
+    transcript = parse_transcript(args.input)
 
     out_dir = args.out_dir or args.input.parent
     out_dir.mkdir(parents=True, exist_ok=True)

@@ -54,7 +54,16 @@ the teammate SYSTEM prompt's PROTOCOL section:
 
 For `r in 1..N`:
   For each participant `p` in declared order:
-    1. Compose dispatch content:
+    1a. Retrieve this avatar's evidence bank for the topic:
+       ```bash
+       .venv/bin/python -c "
+       from persona_studio.grounding.retriever import retrieve_evidence
+       chunks = retrieve_evidence('<p>', '<topic>', k=8)
+       for c in chunks:
+           print(f'- [{c.source}:{c.line_start}-{c.line_end}] {c.text[:240]}')
+       "
+       ```
+    1b. Compose dispatch content:
        ```
        [Debate topic]: <topic>
        [Round]: <r> of <N>
@@ -62,6 +71,12 @@ For `r in 1..N`:
        (Round 1, <p1>): ...
        (Round 1, <p2>): ...
        ...
+       [EVIDENCE BANK — cite from here for factual claims]
+       <retrieved chunks>
+
+       [CITATION RULE]
+       For stats/dates/quotes, cite from EVIDENCE BANK or mark [OPINION]/[INFERENCE]. Never fabricate sources.
+
        [Your turn]: In under 300 characters, name the prior speaker whose point you most agree or disagree with and respond to them directly.
        ```
     2. `SendMessage(to="avatar-<p>", content=<dispatch>)`

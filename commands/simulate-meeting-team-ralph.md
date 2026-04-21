@@ -20,6 +20,16 @@ A variant of the split-panes meeting that adds a **Ralph loop + user-satisfactio
 
    These 3 criteria are reused verbatim as scoring anchors at the end of every iteration (prevents facilitator self-score drift).
 
+3. **Factual Grounding — automatic 4th criterion** (default goal 8/10):
+   This criterion is added automatically in addition to the user's 3 and
+   CANNOT be removed. Its score comes from the post-meeting audit:
+   ```
+   grounding_score = 10 * (1 - unsupported_claims / max(1, total_fact_claims))
+   ```
+   computed by `python -m persona_studio.grounding.audit <transcript.md>`.
+   Display it alongside the user's 3 criteria at scoring time; if below the
+   8/10 threshold, trigger a Ralph re-run just like any other missed criterion.
+
 ## Steps 1-3 — Same flow as `/persona-studio:simulate-meeting-team`
 
 Pick participants → TeamCreate → spawn avatars → agenda rounds → user interruption window.
@@ -28,7 +38,16 @@ Pick participants → TeamCreate → spawn avatars → agenda rounds → user in
 
 After the meeting ends:
 
-1. The facilitator scores each of the **3 criteria on a 0-10 scale**. Overall score = average.
+1. Run the factual-grounding audit first (populates the 4th criterion score
+   and appends a `## Factual Grounding` section to the transcript):
+   ```bash
+   .venv/bin/python -m persona_studio.grounding.audit <transcript-path>
+   ```
+   Read the resulting table's grounding_score per avatar; aggregate = the
+   mean across avatars, rounded to 1 decimal.
+2. The facilitator scores each of the **3 user criteria on a 0-10 scale** AND
+   the **4th Factual Grounding criterion** (from step 1). Overall score =
+   mean of all four.
 2. Ask the user via AskUserQuestion `<Final verdict>` — `Goal met, finish` / `Re-run (Ralph loop)` / `Stop (partial save)`.
 3. If the user picks `Re-run`:
    - Archive the current iteration under an `iter-N` subfolder.
@@ -57,6 +76,7 @@ satisfaction_criteria:
   - <criterion 1>: <score>
   - <criterion 2>: <score>
   - <criterion 3>: <score>
+  - factual_grounding: <score>   # default goal 8/10, auto-added
 iterations_run: <N>
 early_stop: <stop | max_reached | goal_met>
 ```

@@ -95,11 +95,19 @@ For each agenda item `i`:
 1. Facilitator (main Claude) announces the item in the main conversation and
    picks a `lead` participant based on Knowledge Domains match.
 
-2. Dispatch lead:
+2. Retrieve the lead's evidence bank for this agenda item, then dispatch:
+   ```bash
+   .venv/bin/python -c "
+   from persona_studio.grounding.retriever import retrieve_evidence
+   chunks = retrieve_evidence('<lead>', '<topic> <item>', k=8)
+   for c in chunks:
+       print(f'- [{c.source}:{c.line_start}-{c.line_end}] {c.text[:240]}')
+   "
+   ```
    ```
    SendMessage(
      to="avatar-<lead>",
-     content=<opening question scoped to this agenda item>,
+     content="[EVIDENCE BANK]\n<retrieved chunks>\n\n[CITATION RULE] For stats/dates/quotes, cite from EVIDENCE BANK or mark [OPINION]/[INFERENCE]. Never fabricate sources.\n\n<opening question scoped to this agenda item>",
    )
    ```
    Wait briefly for the teammate to produce a reply (appears in its pane +

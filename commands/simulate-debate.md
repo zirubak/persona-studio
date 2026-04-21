@@ -65,6 +65,19 @@ For `r in 1..N`:
     1. `Read(<resolved_agent_path_for_p>)` — get the full persona body. Use the
        project-priority path resolved in Step 0 (`./agents/persona-<p>.md`
        preferred, `$HOME/.persona-studio/agents/persona-<p>.md` as fallback).
+    1.5. Retrieve this avatar's evidence bank for the current topic:
+       ```bash
+       .venv/bin/python -c "
+       import json
+       from persona_studio.grounding.retriever import retrieve_evidence
+       chunks = retrieve_evidence('<p>', '<topic>', k=8)
+       for c in chunks:
+           print(f'- [{c.source}:{c.line_start}-{c.line_end}] {c.text[:240]}')
+       "
+       ```
+       Keep the output as `EVIDENCE_BANK_p` to inject in step 3.
+       If the output is empty (persona has no corpus or nothing matched), use
+       the literal string `(none — speak only from your own persona body)`.
     2. Invoke:
        ```
        Agent(
@@ -91,6 +104,9 @@ For `r in 1..N`:
        (Round 1, <p2>): <quote>
        ...
 
+       [EVIDENCE BANK — cite from here for factual claims]
+       <EVIDENCE_BANK_p from step 1.5>
+
        [YOUR TURN]
        In under 300 characters, name the prior speaker whose point you most agree or disagree with and respond to them directly.
 
@@ -98,6 +114,10 @@ For `r in 1..N`:
        - No meta commentary unrelated to the topic.
        - Stay within your Speech Patterns section.
        - Do not repeat anchor quotes verbatim — use them only as style reference.
+       - For specific statistics, dates, or attributed quotes, quote or
+         paraphrase from EVIDENCE BANK and cite the source tag. If a factual
+         claim is NOT backed by the EVIDENCE BANK, mark it `[OPINION]` or
+         `[INFERENCE]` inline. Never fabricate a source, statistic, or quote.
        ```
 
     **Native subagent alternative** (only if persona existed at session start):

@@ -39,9 +39,18 @@ Main Claude, acting as the facilitator, announces:
 For each agenda item `i` in order:
   a. Facilitator phrases a concrete opening question (≤ 2 sentences).
   b. Pick a `lead` participant most relevant to item `i` based on their persona's
-     Knowledge Domains. Invoke:
+     Knowledge Domains. Retrieve the lead's evidence bank for this agenda item:
+     ```bash
+     .venv/bin/python -c "
+     from persona_studio.grounding.retriever import retrieve_evidence
+     chunks = retrieve_evidence('<lead>', '<topic> <item>', k=8)
+     for c in chunks:
+         print(f'- [{c.source}:{c.line_start}-{c.line_end}] {c.text[:240]}')
+     "
      ```
-     Agent(subagent_type="persona-<lead>", prompt="Give your recommendation for agenda item i in under 300 characters. Topic: <topic>. Item: <item>.")
+     Then invoke with the evidence bank appended to the prompt:
+     ```
+     Agent(subagent_type="persona-<lead>", prompt="[EVIDENCE BANK]\n<retrieved>\n\n[CITATION RULE] For stats/dates/quotes, cite from EVIDENCE BANK or mark [OPINION]/[INFERENCE]. Never fabricate sources.\n\nGive your recommendation for agenda item i in under 300 characters. Topic: <topic>. Item: <item>.")
      ```
   c. Pick one `challenger` participant with a contrasting Debate Style or
      overlapping domain. Invoke:
