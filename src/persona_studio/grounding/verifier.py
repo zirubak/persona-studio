@@ -1,16 +1,27 @@
 """Tier-1 local verification of extracted claims against an evidence bundle.
 
-Phase A: deterministic rule-based verifier. For each :class:`Claim`, scan
-the supplied list of :class:`EvidenceChunk` and decide:
+Phase A (v2) — deterministic rule-based verifier. For each :class:`Claim`,
+scan the supplied list of :class:`EvidenceChunk` and decide:
 
-* ``SUPPORTED`` — a chunk contains all of the claim's *salient tokens*,
-  where salient tokens are numbers (years / percentages / numeric-with-unit)
-  and content nouns. Produces a citation of the form ``source:start-end``.
-* ``UNSUPPORTED`` — evidence contains a contradicting value for the same
-  axis (e.g., claim says "2003", evidence says "2015" for the same
-  subject+verb context).
-* ``UNVERIFIABLE`` — no relevant evidence found OR the claim is OPINION /
-  NARRATIVE (not a fact assertion).
+* ``SUPPORTED`` — SOME chunk contains all of the claim's numeric anchors
+  (years + percentages) AND at least one overlapping content word. The
+  returned citation points to that anchor-bearing chunk, not to the chunk
+  with the most content overlap. This matters when a persona's corpus has
+  multiple chunks on the same topic and the anchor lives in a smaller one.
+* ``UNSUPPORTED`` — some chunk shares ≥ 2 content words with the claim
+  AND its numeric anchors on the same axis (year OR percent) are disjoint
+  from the claim's. Threshold ≥ 2 avoids flagging unrelated chunks that
+  just happen to share a single common word (e.g., claim about GPT-7 in
+  2027 vs an unrelated corpus chunk with the word "released" in a 2023
+  sentence). Same-subject contradictions like "99% vs 18% for the same
+  prototype/bug/features context" naturally exceed 2.
+* ``UNVERIFIABLE`` — no supporting or contradicting chunk OR the claim is
+  OPINION / NARRATIVE.
+
+Tokenization is script-aware: a run like ``doc보다`` splits into
+``["doc", "보다"]`` so Latin and Hangul do not leak into each other. Korean
+particles are stripped from evidence tokens (``프로토타입이`` also counts as
+``프로토타입``) to widen content overlap without changing the source text.
 
 Tier-2 verification (Perplexity MCP / WebSearch) is intentionally *not*
 handled here; it's orchestrated from the markdown command layer so the
@@ -32,19 +43,41 @@ from persona_studio.grounding.types import (
 
 _YEAR_RE = re.compile(r"\b(?:19|20)\d{2}\b")
 _PERCENT_RE = re.compile(r"\d+(?:\.\d+)?\s?%")
-_NUM_UNIT_RE = re.compile(
-    r"\$?\d+(?:\.\d+)?\s?(?:M|B|K|million|billion|thousand|%)?",
-    re.IGNORECASE,
+
+# Script-aware token pattern: pure Latin/digit, pure Hangul/digit, or pure CJK/digit.
+# Mixed-script runs like ``doc보다`` split into ``doc`` + ``보다`` without extra work.
+_TOKEN_RE = re.compile(r"[A-Za-z0-9]+|[가-힣0-9]+|[一-龥0-9]+")
+
+# Common Korean particles that trail nouns — stripping them widens overlap
+# between claim and evidence without changing the original corpus text.
+_KO_PARTICLES = (
+    "으로써", "로써", "에서", "에게", "한테",
+    "으로", "로",
+    "짜리", "부터", "까지", "조차", "마저",
+    "보다", "처럼", "같이",
+    "은", "는", "이", "가", "을", "를", "의", "에", "도", "만", "와", "과",
 )
-_TOKEN_RE = re.compile(r"[A-Za-z0-9가-힣一-龥]+")
+
+# Minimal English/Korean stopwords for salience filtering.
+_STOPWORDS = frozenset(
+    {
+        "a", "an", "the", "and", "or", "but", "of", "for", "to", "in", "on",
+        "with", "is", "are", "was", "were", "be", "it", "its", "this", "that",
+        "as", "at", "by", "from", "has", "have", "had", "not", "no", "yes",
+        "do", "did", "so", "if", "then", "than", "about", "into", "over",
+        "i", "you", "he", "she", "we", "they", "them", "his", "her",
+        "의", "가", "이", "은", "는", "을", "를", "에", "에서", "와", "과",
+        "도", "만", "으로", "로", "하다", "있다", "없다", "그리고", "경우",
+    }
+)
 
 
 def verify_claim(claim: Claim, evidence: Iterable[EvidenceChunk]) -> VerifyResult:
-    """Verify a single claim against a supplied evidence bundle.
+    """Verify a single claim against an evidence bundle.
 
     Does not fetch evidence itself — call ``retrieve_evidence`` first and
-    pass the result here. This separation keeps the verifier pure and
-    easy to test.
+    pass the result here. Pure function; separating retrieval from
+    verification keeps each side trivially testable.
     """
     if claim.kind is ClaimKind.OPINION:
         return VerifyResult(
@@ -73,8 +106,8 @@ def verify_claim(claim: Claim, evidence: Iterable[EvidenceChunk]) -> VerifyResul
             reasoning="No evidence available for this persona/topic.",
         )
 
-    salient = _salient_tokens(claim.text)
-    if not salient:
+    claim_tokens = _content_tokens(claim.text)
+    if not claim_tokens:
         return VerifyResult(
             claim=claim,
             status=VerifyStatus.UNVERIFIABLE,
@@ -83,127 +116,149 @@ def verify_claim(claim: Claim, evidence: Iterable[EvidenceChunk]) -> VerifyResul
             reasoning="Claim lacks salient anchors (numbers, names) to verify.",
         )
 
-    # Find the evidence chunk with maximum salient-token overlap.
-    best: EvidenceChunk | None = None
-    best_overlap: set[str] = set()
+    claim_years = set(_YEAR_RE.findall(claim.text))
+    claim_pcts = set(_PERCENT_RE.findall(claim.text))
+
+    supporters: list[tuple[EvidenceChunk, set[str]]] = []
+    contradictors: list[tuple[EvidenceChunk, set[str], str]] = []
+    best_partial: tuple[EvidenceChunk, set[str]] | None = None
+
     for chunk in evidence_list:
-        chunk_tokens = {t.lower() for t in _TOKEN_RE.findall(chunk.text)}
-        overlap = salient & chunk_tokens
-        if len(overlap) > len(best_overlap):
-            best = chunk
-            best_overlap = overlap
+        ev_tokens = _content_tokens(chunk.text)
+        overlap = claim_tokens & ev_tokens
+        if not overlap:
+            continue
 
-    if best is None or not best_overlap:
-        return VerifyResult(
-            claim=claim,
-            status=VerifyStatus.UNVERIFIABLE,
-            citation=None,
-            score=0.0,
-            reasoning="No evidence chunk matches the claim's anchors.",
+        if best_partial is None or len(overlap) > len(best_partial[1]):
+            best_partial = (chunk, overlap)
+
+        ev_years = set(_YEAR_RE.findall(chunk.text))
+        ev_pcts = set(_PERCENT_RE.findall(chunk.text))
+
+        year_match = not claim_years or claim_years.issubset(ev_years)
+        pct_match = not claim_pcts or claim_pcts.issubset(ev_pcts)
+
+        if year_match and pct_match:
+            supporters.append((chunk, overlap))
+            continue
+
+        year_conflict = bool(
+            claim_years and ev_years and claim_years.isdisjoint(ev_years)
         )
-
-    # Detect contradiction: same context words but a different year/percent/number.
-    contradiction = _detect_contradiction(claim.text, best.text, best_overlap)
-    if contradiction:
-        return VerifyResult(
-            claim=claim,
-            status=VerifyStatus.UNSUPPORTED,
-            citation=None,
-            score=0.85,
-            reasoning=f"Evidence contradicts: {contradiction}",
+        pct_conflict = bool(
+            claim_pcts and ev_pcts and claim_pcts.isdisjoint(ev_pcts)
         )
+        # Require >= 2 overlapping content words so unrelated chunks that
+        # happen to share a single generic word (e.g., "released") don't
+        # trigger a false-positive UNSUPPORTED on well-formed hallucinations.
+        if (year_conflict or pct_conflict) and len(overlap) >= 2:
+            detail = _conflict_detail(
+                claim_years,
+                ev_years,
+                claim_pcts,
+                ev_pcts,
+                year_conflict,
+                pct_conflict,
+            )
+            contradictors.append((chunk, overlap, detail))
 
-    # All salient tokens must be present for SUPPORTED. If only some are, it's
-    # partial — we still mark UNVERIFIABLE since Tier-1 is strict.
-    if _all_anchors_present(claim.text, best.text):
-        score = round(len(best_overlap) / max(len(salient), 1), 4)
+    if supporters:
+        best, overlap = max(supporters, key=lambda p: len(p[1]))
+        score = round(min(1.0, len(overlap) / max(len(claim_tokens), 1)), 4)
         citation = f"{best.source}:{best.line_start}-{best.line_end}"
+        preview = ", ".join(sorted(overlap))[:120]
         return VerifyResult(
             claim=claim,
             status=VerifyStatus.SUPPORTED,
             citation=citation,
             score=score,
-            reasoning=f"Anchors matched in {citation}: {', '.join(sorted(best_overlap))[:120]}",
+            reasoning=f"Anchors matched in {citation}: {preview}",
+        )
+
+    if contradictors:
+        detail = max(contradictors, key=lambda p: len(p[1]))[2]
+        return VerifyResult(
+            claim=claim,
+            status=VerifyStatus.UNSUPPORTED,
+            citation=None,
+            score=0.85,
+            reasoning=f"Evidence contradicts: {detail}",
+        )
+
+    if best_partial is not None:
+        _, overlap = best_partial
+        score = round(len(overlap) / max(len(claim_tokens), 1), 4)
+        return VerifyResult(
+            claim=claim,
+            status=VerifyStatus.UNVERIFIABLE,
+            citation=None,
+            score=score,
+            reasoning="Partial anchor match only; insufficient for Tier-1 support.",
         )
 
     return VerifyResult(
         claim=claim,
         status=VerifyStatus.UNVERIFIABLE,
         citation=None,
-        score=round(len(best_overlap) / max(len(salient), 1), 4),
-        reasoning="Partial anchor match only; insufficient for Tier-1 support.",
+        score=0.0,
+        reasoning="No evidence chunk matches the claim's anchors.",
     )
 
 
 # --- Internal helpers ---------------------------------------------------------
 
 
-# Minimal English/Korean stopwords for salience filtering.
-_STOPWORDS = frozenset(
-    {
-        "a", "an", "the", "and", "or", "but", "of", "for", "to", "in", "on",
-        "with", "is", "are", "was", "were", "be", "it", "its", "this", "that",
-        "as", "at", "by", "from", "has", "have", "had", "not", "no", "yes",
-        "do", "did", "so", "if", "then", "than", "about", "into", "over",
-        "i", "you", "he", "she", "we", "they", "them", "his", "her",
-        "의", "가", "이", "은", "는", "을", "를", "에", "에서", "와", "과",
-        "도", "만", "으로", "로", "하다", "있다", "없다", "그리고",
-    }
-)
-
-
-def _salient_tokens(text: str) -> set[str]:
-    """Return salient lowercased tokens: numbers + non-stopword content words."""
+def _content_tokens(text: str) -> set[str]:
+    """Tokenize + normalize: script-split, lowercase, strip KO particles, stopword filter."""
     tokens: set[str] = set()
-    # Always include numeric anchors as-is (even if short).
-    for m in _NUM_UNIT_RE.findall(text):
-        piece = m.strip().lower()
-        if piece and any(ch.isdigit() for ch in piece):
-            tokens.add(piece)
-    for m in _TOKEN_RE.findall(text):
-        tok = m.lower()
-        if len(tok) <= 2 and not tok.isdigit():
+    for match in _TOKEN_RE.finditer(text):
+        raw = match.group(0).lower()
+        if not raw:
             continue
-        if tok in _STOPWORDS:
-            continue
-        tokens.add(tok)
+        variants = {raw}
+        stripped = _strip_ko_particle(raw)
+        if stripped and stripped != raw:
+            variants.add(stripped)
+        for token in variants:
+            if len(token) <= 1 and not token.isdigit():
+                continue
+            if token in _STOPWORDS:
+                continue
+            tokens.add(token)
     return tokens
 
 
-def _detect_contradiction(
-    claim_text: str, evidence_text: str, overlap: set[str]
-) -> str | None:
-    """Return a short contradiction description or None.
+def _strip_ko_particle(token: str) -> str | None:
+    """Return token with a trailing Korean particle removed, or None if N/A.
 
-    Contradiction heuristic: the claim and evidence mention the same context
-    (at least 2 overlapping content words) but the YEARS or PERCENTAGES
-    differ. We leave deeper semantic contradiction detection for Tier-2 /
-    CoVe in Phase C.
+    Only applies to tokens that are purely Hangul (+ optional digits). Mixed
+    or non-Korean tokens are returned unchanged (None).
     """
-    if len(overlap) < 2:
+    if not token:
         return None
-    claim_years = set(_YEAR_RE.findall(claim_text))
-    ev_years = set(_YEAR_RE.findall(evidence_text))
-    if claim_years and ev_years and claim_years.isdisjoint(ev_years):
-        return (
-            f"claim year {sorted(claim_years)} vs evidence year "
-            f"{sorted(ev_years)}"
-        )
-    claim_pct = set(_PERCENT_RE.findall(claim_text))
-    ev_pct = set(_PERCENT_RE.findall(evidence_text))
-    if claim_pct and ev_pct and claim_pct.isdisjoint(ev_pct):
-        return f"claim pct {sorted(claim_pct)} vs evidence pct {sorted(ev_pct)}"
+    if not all("가" <= ch <= "힣" or ch.isdigit() for ch in token):
+        return None
+    for particle in _KO_PARTICLES:
+        if len(token) > len(particle) + 1 and token.endswith(particle):
+            return token[: -len(particle)]
     return None
 
 
-def _all_anchors_present(claim_text: str, evidence_text: str) -> bool:
-    """Check that every year + every percent in the claim appears in evidence."""
-    claim_years = set(_YEAR_RE.findall(claim_text))
-    ev_years = set(_YEAR_RE.findall(evidence_text))
-    if claim_years and not claim_years.issubset(ev_years):
-        return False
-    claim_pct = set(_PERCENT_RE.findall(claim_text))
-    ev_pct = set(_PERCENT_RE.findall(evidence_text))
-    if claim_pct and not claim_pct.issubset(ev_pct):
-        return False
-    return True
+def _conflict_detail(
+    claim_years: set[str],
+    ev_years: set[str],
+    claim_pcts: set[str],
+    ev_pcts: set[str],
+    year_conflict: bool,
+    pct_conflict: bool,
+) -> str:
+    parts: list[str] = []
+    if year_conflict:
+        parts.append(
+            f"claim year {sorted(claim_years)} vs evidence year {sorted(ev_years)}"
+        )
+    if pct_conflict:
+        parts.append(
+            f"claim pct {sorted(claim_pcts)} vs evidence pct {sorted(ev_pcts)}"
+        )
+    return "; ".join(parts) if parts else "numeric mismatch"
