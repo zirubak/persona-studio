@@ -62,8 +62,10 @@ this menu instead of ending the session.
    - `Sequential (fast, no tmux needed)` — single-screen text stream
    - `Real-time split-panes (tmux, user can interrupt)` — split-panes teammates
    - `Real-time split + Ralph loop (auto-rerun when score below goal)` — Ralph variant
-2. Glob `personas/*.md` and present participants via AskUserQuestion with
-   `multiSelect: true`. Require 2-5 selections.
+2. Glob BOTH `./personas/*.md` AND `$HOME/.persona-studio/personas/*.md`,
+   dedupe by filename stem with project-local priority, and present
+   participants (scope-prefixed) via AskUserQuestion with `multiSelect: true`.
+   Require 2-5 selections.
 3. Ask for the topic (free text) and number of rounds (default 4).
 4. Route by mode:
    - `Sequential` → Execute `commands/simulate-debate.md` inline.
@@ -89,19 +91,33 @@ this menu instead of ending the session.
 
 ## Route D — List avatars
 
-Glob `personas/*.md`, read each and print a one-line summary (name + first line of
-`# Background`). Then return to the menu.
+Glob BOTH scopes:
+- `./personas/*.md` (project-local)
+- `$HOME/.persona-studio/personas/*.md` (global library)
+
+Deduplicate by filename stem with project-local winning on conflict. Read each
+surviving entry and print a one-line summary:
+
+```
+[<scope>] <name> — <first line of # Background>
+```
+
+where `<scope>` is `project` or `global`. Then return to the menu.
 
 ## Route E — Refine an avatar
 
-1. AskUserQuestion with Glob-derived list to pick a persona.
-2. Execute the steps from `commands/persona-refine.md` inline for that
-   persona.
+1. Same dual-scope dual-glob + dedup as Route D. AskUserQuestion with the
+   combined list (scope-prefixed) to pick one persona.
+2. Execute the steps from `commands/persona-refine.md` inline for that persona
+   — that command handles scope resolution internally and edits in-place (never
+   crosses scopes silently).
 
 ## Non-negotiable rules
 
 - Every question to the user MUST be an `AskUserQuestion` call with `options`,
   never plain-text.
 - Keep status updates short and in English.
-- Never write files outside `data/`, `personas/`, `agents/`, `simulations/`.
+- Never write files outside `data/`, `personas/`, `agents/`, `simulations/`
+  (project-local) or `$HOME/.persona-studio/{data,personas,agents}/`
+  (global persona library). `simulations/` output is always project-local.
 - If a step fails, show the exact error and offer `Retry` / `Skip` / `Back to main menu`.

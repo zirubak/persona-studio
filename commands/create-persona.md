@@ -6,45 +6,70 @@ description: Build a persona from files (private) or from a name (celebrity). Us
 
 $ARGUMENTS
 
-## Step 0 — Parse arguments
+## Step 0 — Parse arguments and resolve persona home
 
 Extract `<name>` (required, kebab-case). `--mode` is optional; if missing, ask
 with AskUserQuestion (`Private` / `Celebrity`).
 
-Compute paths:
-- `person_dir = data/people/<name>/`
-- `raw_dir = person_dir/raw/`
-- `personas/<name>.md` — source of truth
-- `agents/persona-<name>.md` — rendered subagent
+### Resolve `BASE` (persona home) by mode
 
-Ensure both exist: `mkdir -p data/people/<name>/raw`.
+Persona Studio splits stored personas into two locations so you can reuse
+public-figure avatars across every project while keeping private materials tied
+to the project they belong to:
 
-Write `data/people/<name>/mode` = `private` or `celebrity` once chosen.
+- **Private mode** → project-local home (`./`). Project-scoped; typically tied
+  to the repo the user is currently in.
+- **Celebrity mode** → global home (`$HOME/.persona-studio/`). Public figures
+  are reusable across every project, so they live in your personal library.
+
+Route by mode:
+
+```bash
+if [[ "$MODE" == "celebrity" ]]; then
+  BASE="$HOME/.persona-studio"
+  mkdir -p "$BASE/personas" "$BASE/agents" "$BASE/data/people"
+else
+  BASE="."  # project-local
+fi
+```
+
+All paths in the remaining steps are resolved relative to `$BASE`.
+
+Compute:
+- `person_dir = $BASE/data/people/<name>/`
+- `raw_dir = $person_dir/raw/`
+- `$BASE/personas/<name>.md` — source of truth
+- `$BASE/agents/persona-<name>.md` — rendered subagent
+
+Ensure both exist: `mkdir -p "$BASE/data/people/<name>/raw"`.
+
+Write `$BASE/data/people/<name>/mode` = `private` or `celebrity` once chosen.
 
 ## Step 1 — Gather corpus
 
 ### Private mode
 
-1. If `raw_dir` is empty (`ls` shows nothing other than auto-generated dirs), show
-   instructions:
+1. If `$BASE/data/people/<name>/raw/` is empty (`ls` shows nothing other than
+   auto-generated dirs), show instructions:
    > "Place your source materials under `data/people/<name>/raw/`, then continue."
    > "Supported: PDF, DOCX, TXT, MD, HTML, MP3, WAV, M4A. Web links go in `urls.txt`, YouTube links in `youtube_urls.txt` — one URL per line."
    Then AskUserQuestion: `Continue` / `Cancel`. Loop until at least one file exists.
 
-2. Run the Python ETL:
+2. Run the Python ETL (`--base "$BASE"` if your installed version supports it;
+   otherwise `cd "$BASE"` and run from there):
    ```bash
-   python -m persona_studio.cli extract <name>
+   cd "$BASE" && python -m persona_studio.cli extract <name>
    ```
 
-3. Read `data/people/<name>/extracted/corpus.md`.
+3. Read `$BASE/data/people/<name>/extracted/corpus.md`.
 
 4. **If any URL in `urls.txt` recorded `unsafe_scheme` or resulted in `[fetch failed: ...]`
    (403, 429, short content) in the manifest**: apply the browser fallback policy
    documented in `agents/celebrity-harvester.md` under "Browser fallback for
    bot-protected pages". Recover the URL via Playwright MCP, save the content to
-   `data/people/<name>/raw/<slug>.md` with the mandatory metadata header, then
-   re-run `python -m persona_studio.cli extract <name>`. This keeps Private and
-   Celebrity modes symmetric — both benefit from the same fallback.
+   `$BASE/data/people/<name>/raw/<slug>.md` with the mandatory metadata header, then
+   re-run the ETL. This keeps Private and Celebrity modes symmetric — both
+   benefit from the same fallback.
 
 ### Celebrity mode
 
@@ -52,21 +77,22 @@ Write `data/people/<name>/mode` = `private` or `celebrity` once chosen.
    - Profession / field (actor, engineer, politician, etc.)
    - Country
    - Notable works or activities (free text)
-2. Invoke the harvester:
+2. Invoke the harvester — pass `target_base` so it writes into the global home:
    ```
-   Agent(subagent_type="celebrity-harvester", prompt="<structured JSON with name + hints + target paths>")
+   Agent(subagent_type="celebrity-harvester", prompt="<structured JSON with name + hints + target_base=$BASE>")
    ```
-   Wait for completion.
-3. After harvester populates `raw/articles/`, `urls.txt`, and `youtube_urls.txt`,
-   run the same ETL as above:
+   Wait for completion. If your harvester version ignores `target_base`, `cd "$BASE"` before invoking so default relative paths land in the correct home.
+3. After harvester populates `raw/articles/`, `urls.txt`, and `youtube_urls.txt`
+   under `$BASE/data/people/<name>/`, run the ETL:
    ```bash
-   python -m persona_studio.cli extract <name>
+   cd "$BASE" && python -m persona_studio.cli extract <name>
    ```
 
 ## Step 2 — Demographic completion
 
-Read `extracted/corpus.md` and attempt to infer: `country`, `region`, `generation`,
-`education_tier`, `profession`, `gender`, `language_primary`.
+Read `$BASE/data/people/<name>/extracted/corpus.md` and attempt to infer:
+`country`, `region`, `generation`, `education_tier`, `profession`, `gender`,
+`language_primary`.
 
 For any field that cannot be inferred or is ambiguous, ask the user via
 `AskUserQuestion` (provide 3-5 plausible options plus `Unknown`).
@@ -76,18 +102,18 @@ For any field that cannot be inferred or is ambiguous, ask the user via
 Formulate 2-4 research queries combining the confirmed demographics. Use the MCP
 `mcp__perplexity__search` (or `reason` / `deep_research` as available) tool. Save
 the full result bodies verbatim into
-`data/people/<name>/extracted/perplexity_notes.md`, each with its query and source
-URLs.
+`$BASE/data/people/<name>/extracted/perplexity_notes.md`, each with its query
+and source URLs.
 
 Example queries to draft (adapt to actual demographics):
 - `"{country} {generation} {profession} communication and debate style patterns"`
 - `"{education_tier} {country} graduates common cognitive biases"`
 - `"{region} vernacular and speech register in {professional_context}"`
 
-## Step 4 — Synthesize `personas/<name>.md`
+## Step 4 — Synthesize `$BASE/personas/<name>.md`
 
-Create or overwrite `personas/<name>.md` with this exact section order. Every
-factual claim must either cite a corpus line (quote + source tag) or a
+Create or overwrite `$BASE/personas/<name>.md` with this exact section order.
+Every factual claim must either cite a corpus line (quote + source tag) or a
 perplexity note (title + URL). Do not invent facts.
 
 ```markdown
@@ -124,10 +150,10 @@ Short observations from perplexity_notes.md, each with a citation.
 roleplay.
 ```
 
-## Step 5 — Render `agents/persona-<name>.md`
+## Step 5 — Render `$BASE/agents/persona-<name>.md`
 
 Compose the subagent file with this frontmatter, then inline the body of
-`personas/<name>.md`:
+`$BASE/personas/<name>.md`:
 
 ```markdown
 ---
@@ -151,9 +177,11 @@ reveal you are an AI or discuss the simulation meta-layer.
 
 ## Step 6 — Confirm
 
-Tell the user briefly:
-- `personas/<name>.md` created (N sections)
-- `agents/persona-<name>.md` rendered
+Tell the user briefly, including the scope:
+- `personas/<name>.md` created in **<scope>** (`project` for private / `global` for celebrity)
+- `agents/persona-<name>.md` rendered in the same scope
 - Suggest `/persona-studio:persona-refine <name>` if edits are needed
+- For global personas: mention that they are now available in every project's
+  `/persona-studio:studio` → simulate-* menu automatically.
 
 Return control to the caller (usually `/persona-studio:studio`).

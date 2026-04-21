@@ -14,7 +14,8 @@ Identical to `/persona-studio:simulate-meeting-team` Step 0:
 1. `which tmux` must succeed.
 2. `$TMUX` env var set AND Claude Code running in `--teammate-mode split-panes`
    (or `teammateMode: split-panes` in settings.json).
-3. At least 2 `personas/*.md` files exist.
+3. At least 2 persona files exist across both scopes combined
+   (`./personas/*.md` + `$HOME/.persona-studio/personas/*.md`).
 4. Participant count ≤ 5 (debate panes get dense above that).
 
 Abort paths and AskUserQuestion fallback (`Switch to sequential`, `Cancel`) same as
@@ -24,9 +25,13 @@ meeting-team.
 
 AskUserQuestion:
 - `Topic`: free text
-- `Participants`: multiSelect (2-5)
+- `Participants`: multiSelect from the combined persona library (both scopes,
+  project-priority dedup; scope-prefixed labels) — 2-5 selections.
 - `Rounds`: `3` / `4` / `5` (default 4)
 - `User interruption mode`: `Open intervention` / `Between rounds only`
+
+For each selected participant, resolve the agent file with project-priority
+(same rule as `/persona-studio:simulate-debate` Step 0).
 
 ## Step 2 — Create team and spawn teammates
 

@@ -11,11 +11,16 @@ $ARGUMENTS
 Parse `<topic>` (quoted string) and participants (at least 2 persona slugs).
 If arguments are missing, ask via `AskUserQuestion`:
 - `Topic`: free text
-- `Participants`: multiSelect from `personas/*.md` (2-5 selections)
+- `Participants`: multiSelect from the combined persona library — Glob
+  BOTH `./personas/*.md` AND `$HOME/.persona-studio/personas/*.md`, dedupe by
+  filename stem with project-local winning (2-5 selections).
 - `Rounds`: `3` / `4` / `5` (default 4)
 
-Verify each participant has a matching `agents/persona-<slug>.md`. If
-any is missing, stop with an explanation.
+For each selected participant, resolve the agent file with project-priority:
+1. If `./agents/persona-<slug>.md` exists, use it (scope: project).
+2. Else if `$HOME/.persona-studio/agents/persona-<slug>.md` exists, use it
+   (scope: global).
+3. Else stop with an explanation.
 
 ## Step 0.5 — Choose Agent invocation strategy
 
@@ -57,7 +62,9 @@ For `r in 1..N`:
   For each participant `p` in declared order:
 
     **Dynamic persona invocation** (default):
-    1. `Read(agents/persona-<p>.md)` — get the full persona body.
+    1. `Read(<resolved_agent_path_for_p>)` — get the full persona body. Use the
+       project-priority path resolved in Step 0 (`./agents/persona-<p>.md`
+       preferred, `$HOME/.persona-studio/agents/persona-<p>.md` as fallback).
     2. Invoke:
        ```
        Agent(

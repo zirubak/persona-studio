@@ -25,7 +25,13 @@ Run these checks in order. Abort with a clear user message if any fails.
    - Offer AskUserQuestion: `Show detailed restart instructions` / `Switch to sequential mode (/persona-studio:simulate-meeting)` / `Cancel`.
 
 3. **Participant files exist?**
-   Glob `personas/*.md`, confirm at least 2 exist. AskUserQuestion to pick 2-6 participants (multiSelect).
+   Glob BOTH `./personas/*.md` AND `$HOME/.persona-studio/personas/*.md`,
+   dedupe by filename stem with project-local winning on conflict, confirm at
+   least 2 survive. AskUserQuestion to pick 2-6 participants (multiSelect;
+   scope-prefix each option with `[project]` or `[global]` so the user knows
+   where each comes from). For each selection, resolve the agent file with
+   project-priority (`./agents/persona-<p>.md` first,
+   `$HOME/.persona-studio/agents/persona-<p>.md` as fallback).
 
 4. **Target participant count ≤ 6**: tmux pane splitting becomes unreadable beyond 6 teammates + facilitator.
 
@@ -33,7 +39,8 @@ Run these checks in order. Abort with a clear user message if any fails.
 
 AskUserQuestion:
 - `Topic`: free text
-- `Participants`: multiSelect from `personas/*.md` (2-6 selections, no duplicates)
+- `Participants`: multiSelect from the combined persona library (both scopes,
+  project-priority dedup; scope-prefixed labels) — 2-6 selections, no duplicates
 - `Agenda composition`: `Auto-generate` / `Enter manually`
 - `User interruption mode`: `Open (type in any pane at any time)` / `Between agenda items (explicit facilitator invitation only)`
 
@@ -46,7 +53,8 @@ team_id = TeamCreate(team_name="meeting-<topic-slug>-<ts>")
 ```
 
 For each participant `p`:
-1. `Read(agents/persona-<p>.md)` → full persona body.
+1. `Read(<resolved_agent_path_for_p>)` → full persona body. Use the
+   project-priority path resolved in Step 0.
 2. Compose teammate system prompt:
    ```
    You are <name>. Stay fully in character. Never reveal you are an AI.

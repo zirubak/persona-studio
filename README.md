@@ -259,6 +259,30 @@ Two formats × three "modes":
 
 <br/>
 
+## Persona Library — project-local vs. global
+
+Avatars live in one of two places, chosen automatically by mode:
+
+| Mode | Stored in | Why |
+| --- | --- | --- |
+| Private (your own files) | `./personas/` + `./agents/` inside the current project | Private materials are usually tied to one project. |
+| Celebrity (public figure) | `$HOME/.persona-studio/` (global library) | Public figures are useful in every project — build once, reuse everywhere. |
+
+Every `simulate-*` command globs **both** locations and lets you pick participants from the combined list. On name collision, the project-local version wins. Meeting outputs (`simulations/`) stay project-local — they are artifacts of the project they were run in.
+
+Folder layout (only created when you first save a global persona):
+
+```
+~/.persona-studio/
+├── personas/            # Source of truth
+├── agents/              # Rendered Claude Code subagents
+└── data/people/<name>/  # Raw materials + ETL output
+```
+
+Add it to your dotfiles-sync or backup set and your library travels with you across machines.
+
+<br/>
+
 ## What gets generated?
 
 Every meeting produces three files in `simulations/<your-topic>/`:

@@ -180,16 +180,35 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
-# Persona builder artifacts (derived content; source-of-truth is personas/*.md)
-data/people/*/extracted/
-data/people/*/transcripts/
-data/people/*/raw/articles/
-data/people/*/raw/urls.txt
-data/people/*/raw/youtube_urls.txt
-data/people/*/raw/audio_cache/
+# Persona data — strict allowlist. Any NEW persona / avatar / raw folder is
+# ignored by default; only the known public samples below are committed. This
+# is defense against session-scoped auto-commit hooks accidentally staging
+# private work. To publish a new sample persona, explicitly un-ignore it here.
+data/people/*/
+!data/people/sample_private/
+
+# Derived ETL artifacts are never committed even for sample_private
+data/people/sample_private/extracted/
+data/people/sample_private/transcripts/
+data/people/sample_private/raw/articles/
+data/people/sample_private/raw/audio_cache/
+
+# Persona source-of-truth — only known public samples
+personas/*
+!personas/sample_private.md
+!personas/paul_graham.md
+!personas/naval_ravikant.md
+!personas/dhh.md
+
+# Rendered subagents — only known public samples
+agents/persona-*
+!agents/persona-sample_private.md
+!agents/persona-paul_graham.md
+!agents/persona-naval_ravikant.md
+!agents/persona-dhh.md
+
+# Simulation outputs are always local artifacts, never committed
 simulations/
-!data/people/sample_private/raw/
-!data/people/sample_private/raw/**
 
 # Playwright MCP session artifacts (tab snapshots, console logs)
 .playwright-mcp/

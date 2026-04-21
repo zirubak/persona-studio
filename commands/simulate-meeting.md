@@ -8,7 +8,10 @@ $ARGUMENTS
 
 ## Step 0 — Normalize inputs
 
-Same participant validation as `/persona-studio:simulate-debate`. 2-6 participants allowed.
+Same participant validation as `/persona-studio:simulate-debate` (including the
+dual-scope Glob over `./personas/*.md` + `$HOME/.persona-studio/personas/*.md`
+with project-priority dedup, and project-priority agent-file lookup).
+2-6 participants allowed.
 
 **Agent invocation strategy**: Default to **dynamic persona** pattern —
 `subagent_type="general-purpose"` with the persona file body inlined into the
