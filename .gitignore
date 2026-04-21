@@ -210,6 +210,10 @@ agents/persona-*
 # Simulation outputs are always local artifacts, never committed
 simulations/
 
+# Factual-grounding per-install cache (tier-2 tool detection timestamp).
+# Each checkout/machine regenerates this on first /persona-studio:studio run.
+data/grounding-config.json
+
 # Playwright MCP session artifacts (tab snapshots, console logs)
 .playwright-mcp/
 

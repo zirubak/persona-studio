@@ -126,6 +126,45 @@ class TestRetrieveEvidence:
         monkeypatch.setenv("HOME", str(tmp_path / "fake_home"))
         assert retrieve_evidence("nobody", topic="anything", k=5) == []
 
+    def test_missing_persona_warns_once(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """User debugging 'why is my score 0' needs a one-line hint."""
+        # Clear the session-scoped warning memo so a prior test doesn't mask this one.
+        from persona_studio.grounding import retriever as r
+
+        monkeypatch.setattr(r, "_WARNED_MISSING", set())
+        monkeypatch.setattr(r, "_WARNED_EMPTY", set())
+        monkeypatch.chdir(tmp_path)
+        monkeypatch.setenv("HOME", str(tmp_path / "fake_home"))
+        retrieve_evidence("nobody", topic="x", k=5)
+        # Second call must NOT warn again for the same persona (avoid log noise).
+        retrieve_evidence("nobody", topic="y", k=5)
+        captured = capsys.readouterr()
+        assert captured.err.count("no corpus found for persona 'nobody'") == 1
+
+    def test_empty_corpus_warns(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """Persona directory exists but corpus.md is empty → warn."""
+        from persona_studio.grounding import retriever as r
+
+        monkeypatch.setattr(r, "_WARNED_MISSING", set())
+        monkeypatch.setattr(r, "_WARNED_EMPTY", set())
+        monkeypatch.chdir(tmp_path)
+        ext = tmp_path / "data" / "people" / "bob" / "extracted"
+        ext.mkdir(parents=True)
+        (ext / "corpus.md").write_text("", encoding="utf-8")
+        retrieve_evidence("bob", topic="x", k=5)
+        captured = capsys.readouterr()
+        assert "corpus empty for persona 'bob'" in captured.err
+
     def test_missing_perplexity_notes_tolerated(self, global_persona: Path) -> None:
         """bob has corpus.md but NO perplexity_notes.md — must not crash."""
         chunks = retrieve_evidence("bob", topic="Nobel prize", k=5)
