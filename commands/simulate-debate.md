@@ -6,6 +6,29 @@ description: Round-robin debate among 2-5 persona avatars. Usage: /persona-studi
 
 $ARGUMENTS
 
+## Preamble — session grounding flag check (runs first)
+
+Read the session-scoped grounding flag BEFORE any grounding work:
+
+```bash
+if [ "$(.venv/bin/python -m persona_studio.grounding.session status)" = "disabled" ]; then
+    GROUNDING_ENABLED=false
+    echo "[grounding] disabled for this session — skipping the grounding pipeline"
+else
+    GROUNDING_ENABLED=true
+fi
+```
+
+When `GROUNDING_ENABLED=false`, every grounding-related step in this
+command is a no-op: SKIP the `[EVIDENCE BANK]` retrieval (Step 2 sub-step
+1.5), the `verify_claims` call, the Tier-2 external-verification
+fallback (Step 3.5), the Step 3.6 CoVe pass, and the `audit.py`
+invocation (Step 5). The debate still runs — it just produces a vanilla
+transcript without `[SUPPORTED]` / `[UNSUPPORTED]` /
+`[VERIFIED-EXTERNAL]` / `[FACT-CHECKER CHALLENGE]` tags and without the
+final `## Factual Grounding` section. Users re-enable via
+`/persona-studio:studio` → Toggle factual grounding.
+
 ## Step 0 — Normalize inputs
 
 Parse `<topic>` (quoted string) and participants (at least 2 persona slugs).
