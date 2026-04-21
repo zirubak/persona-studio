@@ -178,6 +178,38 @@ class TestCompare:
         )
         assert result["verdict"] == "consistent"
 
+    def test_discrepancy_when_answer_negates_claim_year(self) -> None:
+        """LLM correction pattern: 'No, X is wrong; actually Y' must be
+        detected as discrepancy even though the answer echoes the claim's
+        value (the echo is inside a negation context)."""
+        result = compare(
+            claim="Stripe was founded in 2005 by the Collison brothers.",
+            answer=(
+                "No. According to the evidence, Stripe was co-founded by "
+                "Patrick and John Collison in 2010, not 2005."
+            ),
+        )
+        assert result["verdict"] == "discrepancy"
+        assert "2010" in result["reason"] or "2005" in result["reason"]
+
+    def test_discrepancy_when_answer_says_actually_different_year(self) -> None:
+        result = compare(
+            claim="The agreement was signed in 1995.",
+            answer="Actually it was signed in 1998, not 1995.",
+        )
+        assert result["verdict"] == "discrepancy"
+
+    def test_consistent_when_answer_merely_adds_later_year_without_negation(self) -> None:
+        """Regression guard: if the answer just lists multiple years and the
+        claim's year appears among them WITHOUT negation context, we must
+        still return consistent — we do not want to flag every multi-year
+        answer as a correction."""
+        result = compare(
+            claim="Alice founded Acme in 2015.",
+            answer="Alice founded Acme in 2015 and later raised a Series A in 2018.",
+        )
+        assert result["verdict"] == "consistent"
+
 
 # --- CLI subprocess tests ----------------------------------------------------
 

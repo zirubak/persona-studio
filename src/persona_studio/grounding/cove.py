@@ -165,6 +165,35 @@ def generate_question(claim: str) -> dict[str, str]:
     }
 
 
+_NEGATION_RE = re.compile(
+    r"\b(?:no|not|never|wrong|incorrect|actually|instead|isn't|wasn't|"
+    r"aren't|weren't|false|mistake|mistaken|rather|correction)\b",
+    re.IGNORECASE,
+)
+
+
+def _answer_negates_claim(answer: str, claim_axis_values: set[str]) -> bool:
+    """Heuristic: does the answer contain a negation marker AND numeric
+    anchors beyond the claim's?
+
+    Catches the common LLM correction pattern ``"No, X is wrong; actually Y"``
+    where the answer echoes the claim's number (negated) AND supplies the
+    correct number. Without this check, the anchor-intersection rule would
+    declare consistency because the claim's number does literally appear in
+    the answer.
+    """
+    if not _NEGATION_RE.search(answer):
+        return False
+    # Look for negation within 40 chars of at least one claim value.
+    for value in claim_axis_values:
+        for m in re.finditer(re.escape(value), answer):
+            window_start = max(0, m.start() - 40)
+            window_end = min(len(answer), m.end() + 40)
+            if _NEGATION_RE.search(answer[window_start:window_end]):
+                return True
+    return False
+
+
 def compare(claim: str, answer: str) -> dict[str, object]:
     """Compare anchor sets between a claim and an LLM-produced answer.
 
@@ -173,11 +202,15 @@ def compare(claim: str, answer: str) -> dict[str, object]:
     1. If both sides carry year anchors and the sets are disjoint →
        ``discrepancy``.
     2. Same rule for percent anchors.
-    3. If at least one anchor type is present in both sides and every
+    3. If the answer contains a negation marker near the claim's value AND
+       introduces a different numeric anchor on the same axis → the answer
+       is CORRECTING the claim. Returns ``discrepancy``. This handles
+       responses like "No, X is wrong; actually Y".
+    4. If at least one anchor type is present in both sides and every
        shared anchor type matches element-wise → ``consistent``.
-    4. If the claim carries an anchor type that the answer does not →
+    5. If the claim carries an anchor type that the answer does not →
        ``inconclusive``.
-    5. Otherwise → ``inconclusive`` (no shared axis to compare).
+    6. Otherwise → ``inconclusive`` (no shared axis to compare).
     """
     claim_anchors = extract_anchors(claim)
     answer_anchors = extract_anchors(answer)
@@ -192,6 +225,24 @@ def compare(claim: str, answer: str) -> dict[str, object]:
                 f"answer {axis} {_fmt_set(aset)}"
             )
             return _verdict("discrepancy", reason, claim_anchors, answer_anchors)
+
+    # Rule 3 — answer echoes the claim's value with negation context AND
+    # introduces a different value on the same axis → discrepancy.
+    for axis in ("year", "percent"):
+        cset = set(claim_anchors.get(axis, []))
+        aset = set(answer_anchors.get(axis, []))
+        # answer has the claim value but also additional values, and the
+        # claim value is surrounded by negation markers in the answer text.
+        if cset and aset and cset.issubset(aset) and (aset - cset):
+            if _answer_negates_claim(answer, cset):
+                correct = sorted(aset - cset)
+                reason = (
+                    f"answer negates claim {axis} {_fmt_set(cset)} "
+                    f"and asserts {axis} {_fmt_set(set(correct))}"
+                )
+                return _verdict(
+                    "discrepancy", reason, claim_anchors, answer_anchors
+                )
 
     # Rule 3 — shared axes all match → consistent.
     shared_axes = [
