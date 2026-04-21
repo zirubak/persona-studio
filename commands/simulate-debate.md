@@ -163,6 +163,94 @@ For `r in 1..N`:
 
        Between turns give the user a one-line progress note (no full dump).
 
+    3.6. **CoVe pass on residual UNVERIFIABLE high-risk claims** (Chain-of-
+       Verification, bounded by a per-avatar budget):
+
+       At the top of the simulation (once, before the round loop starts),
+       initialize bash counters:
+       ```bash
+       COVE_BUDGET_PER_AVATAR=5
+       # for each participant p:
+       declare "COVE_USED_<p>=0"
+       ```
+
+       After Step 3.5 has run, iterate over claims in `CLAIMS_JSON` again and
+       apply CoVe ONLY when ALL three conditions hold:
+         - `status == "unverifiable"` after Tier-2 (the tag inserted in 3.5
+           is `[UNVERIFIED-EXTERNAL]` or the claim was left Tier-1
+           `unverifiable` because Tier-2 was `none` / failed)
+         - `is_high_risk == true`
+         - `COVE_USED_<p> < COVE_BUDGET_PER_AVATAR`
+
+       When budget is exhausted, annotate the remaining eligible claims
+       `[UNVERIFIABLE — CoVe budget exceeded]` and skip the rest.
+
+       For each qualifying claim:
+
+       1. Generate the verification question:
+          ```bash
+          Q_JSON=$(printf '%s' "<claim.text>" \
+              | .venv/bin/python -m persona_studio.grounding.cove generate-question)
+          # Q_JSON fields: question, anchor_type, anchor_value, claim_snippet
+          ```
+
+       2. Independently answer the question from the evidence bank. Use the
+          Agent tool with `subagent_type="general-purpose"`; the prompt is
+          short and strict:
+          ```
+          Agent(
+            subagent_type="general-purpose",
+            description="CoVe answer for <p> claim",
+            prompt="""
+              Answer the following question strictly from the provided
+              evidence. If the evidence does not contain the answer, reply
+              with the single word: unknown.
+
+              Question: <Q_JSON.question>
+
+              Evidence:
+              <EVIDENCE_BANK_p from step 1.5>
+              <Tier-2 search result text from 3.5, if any>
+            """,
+          )
+          ```
+          Capture the reply text as `$COVE_ANSWER`.
+
+       3. Compare the original claim against the independent answer:
+          ```bash
+          CMP_JSON=$(.venv/bin/python -m persona_studio.grounding.cove compare \
+              --claim "<original claim.text>" --answer "$COVE_ANSWER")
+          # CMP_JSON fields: verdict, reason, claim_anchors, answer_anchors
+          ```
+
+       4. Branch on `$CMP_JSON.verdict`:
+          - `"discrepancy"`:
+            a. Insert `[FACT-CHECKER CHALLENGE: <CMP_JSON.reason>]` into the
+               transcript line immediately after the flagged claim sentence.
+            b. Re-invoke the avatar (same dynamic persona pattern as Step 2)
+               with a challenge prompt:
+               ```
+               Your previous statement '<original claim.text>' could not be
+               verified. Evidence suggests <CMP_JSON.reason>. Please retract,
+               cite a source, or restate with uncertainty. Keep the reply
+               under 200 characters.
+               ```
+            c. Append the avatar's response as a new `[retract/defend]`
+               blockquote line directly below the flagged turn, replacing
+               the flagged portion of the original reply in the transcript
+               record (keep the original in history as a strikethrough or
+               suffix `(original, flagged)`).
+          - `"inconclusive"`: leave the Tier-2 annotation as-is. Do NOT add
+            a `[FACT-CHECKER CHALLENGE]` tag.
+          - `"consistent"`: no action; claim stands.
+
+       5. Increment `COVE_USED_<p>` by 1 regardless of verdict (every CoVe
+          pass counts against the budget).
+
+       Give the user a one-line progress note after the CoVe pass for the
+       turn (e.g., "CoVe: 2 checked, 1 discrepancy, 1 consistent, budget 3/5
+       remaining for <p>"). Do not dump full JSON.
+
 ## Step 3 — Synthesis
 
 After all rounds, Main Claude writes a neutral summary with three subsections:

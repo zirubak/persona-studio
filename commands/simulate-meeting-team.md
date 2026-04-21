@@ -86,9 +86,57 @@ For each participant `p`:
    )
    ```
 
-After all teammates spawned, tell the user: "<N> avatars are standing by in their own panes. Starting the agenda. You can type directly into any avatar's pane during the meeting, or type `<aside>` here to send a message to the facilitator."
+After all avatar teammates spawned, also spawn ONE silent `fact-checker`
+teammate (same team, but never speaks in the meeting):
+
+```
+Task(
+  subagent_type="general-purpose",
+  name="fact-checker",
+  team_name=team_id,
+  prompt="""
+    You are a SILENT fact-checker. You NEVER speak in the meeting. Your job:
+
+    1. When the facilitator sends you a message containing an avatar turn
+       plus its EVIDENCE BANK, extract factual claims via:
+         .venv/bin/python -m persona_studio.grounding.verify_claims \\
+             --persona <avatar> --topic <topic> --only-high-risk
+       (the avatar slug and topic are in the facilitator's message header).
+
+    2. For each UNVERIFIABLE high-risk claim, run Chain-of-Verification
+       (CoVe) via the two cove.py CLI modes:
+         a. printf '%s' "<claim>" | .venv/bin/python \\
+                -m persona_studio.grounding.cove generate-question
+         b. Answer the generated question YOURSELF, strictly from the
+            EVIDENCE BANK the facilitator provided. If the evidence does
+            not contain the answer, say exactly: unknown.
+         c. .venv/bin/python -m persona_studio.grounding.cove compare \\
+                --claim "<claim>" --answer "<your-answer>"
+
+    3. Reply to the facilitator ONLY with JSON, no prose:
+         {"verdicts": [
+           {"claim": "...", "status": "consistent|discrepancy|inconclusive",
+            "reason": "..."}
+         ]}
+
+    4. Never post into the meeting transcript. Never address the avatars.
+  """,
+  run_in_background=true,
+)
+```
+
+Then tell the user: "<N> avatars are standing by in their own panes. Starting the agenda. You can type directly into any avatar's pane during the meeting, or type `<aside>` here to send a message to the facilitator."
 
 ## Step 3 — Agenda loop
+
+Before the first agenda item, initialize the CoVe budget counters (facilitator
+state, NOT inside the fact-checker):
+
+```bash
+COVE_BUDGET_PER_AVATAR=5
+# for each participant p:
+declare "COVE_USED_<p>=0"
+```
 
 For each agenda item `i`:
 
@@ -135,6 +183,47 @@ For each agenda item `i`:
    WebSearch; insert `[VERIFIED-EXTERNAL]` / `[UNVERIFIED-EXTERNAL]` tags
    inline. Tool preference from `data/grounding-config.json`.
 
+5b. **Fact-checker CoVe routing** (team-mode equivalent of
+   `/persona-studio:simulate-debate` Step 3.6). Run for EACH of the lead and
+   challenger replies in this agenda item. Skip entirely for an avatar if
+   `COVE_USED_<avatar> >= COVE_BUDGET_PER_AVATAR` — annotate remaining
+   UNVERIFIABLE high-risk claims `[UNVERIFIABLE — CoVe budget exceeded]`
+   and move on.
+
+   Otherwise:
+   ```
+   SendMessage(
+     to="fact-checker",
+     content="""
+       [avatar]: <avatar-slug>
+       [topic]: <topic>
+       [agenda item]: <item>
+       [turn]:
+       <reply text>
+
+       [EVIDENCE BANK]
+       <EVIDENCE BANK used to dispatch this turn>
+     """,
+   )
+   ```
+   Wait up to 15 s for the JSON reply `{"verdicts": [...]}`.
+
+   For each verdict in order:
+     - `"discrepancy"`:
+       a. Post `[CHALLENGE — "<claim>" : <reason>]` into the main meeting
+          transcript right after the flagged claim in this avatar's block.
+       b. `SendMessage(to="avatar-<avatar>", content="Your statement
+          '<claim>' could not be verified. Evidence suggests <reason>.
+          Retract, cite, or restate with uncertainty within 15 seconds.
+          Under 200 characters.")`
+       c. Wait up to 15 s; append the reply to the avatar's block as a
+          `[retract/defend]` line, marking the original portion
+          `(original, flagged)`.
+       d. Increment `COVE_USED_<avatar>` by 1.
+     - `"inconclusive"`: leave the Tier-2 annotation. No challenge.
+       Increment `COVE_USED_<avatar>` by 1.
+     - `"consistent"`: no action. Increment `COVE_USED_<avatar>` by 1.
+
 6. Facilitator synthesizes a 2-3 sentence decision summary + action item candidate.
 
 ## Step 4 — Close
@@ -144,10 +233,12 @@ Facilitator writes:
 - Action items (owner / due date table)
 - Follow-up questions
 
-Announce close in each teammate's context:
+Announce close in each teammate's context (include the silent
+`fact-checker`):
 ```
 for p in participants:
     SendMessage(to="avatar-<p>", content="This meeting is closing. Thanks for your input.")
+SendMessage(to="fact-checker", content="Meeting closed. No further verification required.")
 ```
 
 Then `TeamDelete(team_name=team_id)` to free the panes.

@@ -65,6 +65,57 @@ For each agenda item `i` in order:
      `--only-high-risk`, call the Tier-2 tool (Perplexity if available,
      WebSearch otherwise) for any UNVERIFIABLE high-risk claims, and insert
      `[VERIFIED-EXTERNAL: ...]` or `[UNVERIFIED-EXTERNAL]` tags inline.
+  e2. **CoVe pass on residual UNVERIFIABLE high-risk claims** (same
+     Chain-of-Verification flow as `/persona-studio:simulate-debate` Step 3.6).
+
+     Before the first agenda item, initialize a per-avatar budget:
+     ```bash
+     COVE_BUDGET_PER_AVATAR=5
+     # for each participant p:
+     declare "COVE_USED_<p>=0"
+     ```
+
+     For each claim in the lead's and challenger's `CLAIMS_JSON` where
+     `status == "unverifiable"` after Tier-2, `is_high_risk == true`, and
+     `COVE_USED_<avatar> < COVE_BUDGET_PER_AVATAR`:
+
+     1. Generate the verification question:
+        ```bash
+        Q_JSON=$(printf '%s' "<claim.text>" \
+            | .venv/bin/python -m persona_studio.grounding.cove generate-question)
+        ```
+     2. Independently answer it via a sub-Agent
+        (`subagent_type="general-purpose"`), prompt:
+        ```
+        Answer the following question strictly from the provided evidence.
+        If the evidence does not contain the answer, reply with the single
+        word: unknown.
+
+        Question: <Q_JSON.question>
+        Evidence: <EVIDENCE BANK for this avatar> + <Tier-2 search result, if any>
+        ```
+        Capture as `$COVE_ANSWER`.
+     3. Compare:
+        ```bash
+        CMP_JSON=$(.venv/bin/python -m persona_studio.grounding.cove compare \
+            --claim "<claim.text>" --answer "$COVE_ANSWER")
+        ```
+     4. Branch on `$CMP_JSON.verdict`:
+        - `"discrepancy"`: insert `[FACT-CHECKER CHALLENGE: <reason>]` into
+          the transcript line after the flagged claim AND re-invoke the
+          avatar with a retract/defend prompt:
+          "Your previous statement '<claim.text>' could not be verified.
+          Evidence suggests <reason>. Please retract, cite a source, or
+          restate with uncertainty. Under 200 characters." Append the
+          response as a `[retract/defend]` blockquote line, marking the
+          original portion `(original, flagged)`.
+        - `"inconclusive"`: leave the Tier-2 annotation; no challenge.
+        - `"consistent"`: no action.
+     5. Increment `COVE_USED_<avatar>` by 1.
+
+     When a CoVe budget is exhausted for an avatar, annotate remaining
+     eligible claims `[UNVERIFIABLE — CoVe budget exceeded]` and stop
+     calling CoVe for that avatar.
   f. Facilitator synthesizes a 2-3 sentence decision summary + action item candidate.
 
 ## Step 3 — Meeting close
