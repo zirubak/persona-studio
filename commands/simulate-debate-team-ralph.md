@@ -6,6 +6,18 @@ description: Split-panes debate + satisfaction-score Ralph loop. Mandatory 3-axi
 
 Combines `/persona-studio:simulate-debate-team` with the scoring + Ralph loop pattern from `/persona-studio:simulate-meeting-team-ralph`. Satisfaction is evaluated after the round loop instead of after an agenda.
 
+## Preamble — session grounding flag check
+
+Inherits the same preamble as `/persona-studio:simulate-debate-team`. Run the session-flag check once at the top:
+
+```bash
+if [ "$(.venv/bin/python -m persona_studio.grounding.session status)" = "disabled" ]; then
+    GROUNDING_ENABLED=false
+fi
+```
+
+When `GROUNDING_ENABLED=false` the Ralph loop ALSO suppresses the automatic "Factual Grounding" 4th criterion (since there's no audit score to read). User's 3 manual criteria remain the only gates.
+
 ## Step 0 — Pre-flight + TUI
 
 Same as `/persona-studio:simulate-debate-team` Step 0 plus the `/persona-studio:simulate-meeting-team-ralph` TUI inputs (target score, max iterations, 3 measurement criteria, and the automatic **Factual Grounding 4th criterion** with default goal 8/10 — scored via `python -m persona_studio.grounding.audit`).

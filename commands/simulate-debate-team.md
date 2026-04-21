@@ -8,6 +8,22 @@ Split-panes version of `/persona-studio:simulate-debate`. Each persona becomes a
 teammate running in its own pane. Sequential version stays at
 `/persona-studio:simulate-debate` for environments without tmux.
 
+## Preamble — session grounding flag check
+
+```bash
+if [ "$(.venv/bin/python -m persona_studio.grounding.session status)" = "disabled" ]; then
+    GROUNDING_ENABLED=false
+    echo "[grounding] disabled for this session — skipping the grounding pipeline"
+else
+    GROUNDING_ENABLED=true
+fi
+```
+
+When `GROUNDING_ENABLED=false`: SKIP the `[EVIDENCE BANK]` dispatch,
+`verify_claims` calls, Tier-2 external-verification fallback, the
+fact-checker teammate spawn, and post-meeting audit. The debate still
+runs with avatar teammates only.
+
 ## Step 0 — Pre-flight check
 
 Identical to `/persona-studio:simulate-meeting-team` Step 0:

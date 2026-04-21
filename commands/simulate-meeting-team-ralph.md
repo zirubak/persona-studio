@@ -6,6 +6,18 @@ description: Split-panes meeting + user satisfaction score goal + Ralph loop (au
 
 A variant of the split-panes meeting that adds a **Ralph loop + user-satisfaction score gate**. It keeps everything from `/persona-studio:simulate-meeting-team`, then adds a TUI goal-setting step before the meeting, post-meeting scoring, and an automatic re-run when the score is below the goal.
 
+## Preamble — session grounding flag check
+
+Inherits the same preamble as `/persona-studio:simulate-meeting-team`:
+
+```bash
+if [ "$(.venv/bin/python -m persona_studio.grounding.session status)" = "disabled" ]; then
+    GROUNDING_ENABLED=false
+fi
+```
+
+When `GROUNDING_ENABLED=false` the Ralph loop ALSO suppresses the automatic "Factual Grounding" 4th criterion (no audit score to read). User's 3 manual criteria remain the only gates.
+
 ## Step 0 — Pre-flight + TUI satisfaction-score setup
 
 1. Run the same tmux / teammate-mode pre-flight checks as `/persona-studio:simulate-meeting-team` Step 0.

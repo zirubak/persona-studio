@@ -144,64 +144,45 @@ Tier-3 CoVe, and post-meeting audit). Default: ON. Turning it OFF is the
 escape hatch for pure-brainstorming sessions where divergent / speculative
 claims are welcome and hallucinations should not be suppressed.
 
-State lives in a single JSON file at the project root: `data/grounding-session.json`.
+State lives in a single JSON file at the project root: `data/grounding-session.json`. The `persona_studio.grounding.session` CLI manages reads and writes so this command stays a one-liner.
 
-1. Read the current state:
+1. Toggle via the session CLI:
+   ```bash
+   NEW_STATE=$(.venv/bin/python -m persona_studio.grounding.session toggle)
+   # NEW_STATE is literally "enabled" or "disabled"
+   ```
 
-```bash
-.venv/bin/python - <<'PY'
-import json, pathlib
-path = pathlib.Path("data/grounding-session.json")
-if path.exists():
-    state = json.loads(path.read_text(encoding="utf-8"))
-else:
-    state = {"enabled": True, "until": "session"}
-print(json.dumps(state))
-PY
-```
+2. Print the new state to the user exactly as:
+   - `Factual grounding: ON` (when output is `enabled`)
+   - `Factual grounding: OFF (this session only)` (when output is `disabled`)
 
-   - If the file does not exist, grounding is ON by default.
+3. Return to the main menu.
 
-2. Flip the `enabled` boolean and write back. On first toggle (file missing)
-   this writes `{"enabled": false, "until": "session"}`.
-
-```bash
-.venv/bin/python - <<'PY'
-import json, pathlib
-path = pathlib.Path("data/grounding-session.json")
-path.parent.mkdir(parents=True, exist_ok=True)
-if path.exists():
-    state = json.loads(path.read_text(encoding="utf-8"))
-    state["enabled"] = not bool(state.get("enabled", True))
-else:
-    state = {"enabled": False, "until": "session"}
-state["until"] = "session"
-path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
-print(json.dumps(state))
-PY
-```
-
-3. Print the new state to the user exactly as:
-   - `Factual grounding: ON` (when `enabled` is true)
-   - `Factual grounding: OFF (this session only)` (when `enabled` is false)
-
-4. Return to the main menu.
-
-**Flag contract (for `simulate-*.md` commands — follow-up task)**:
+**Flag contract (consumed by `simulate-*.md` commands)**:
 
 - Path: `data/grounding-session.json` (project-local, never committed —
-  already covered by the `data/` entry in `.gitignore`).
+  covered by the `data/` allowlist rules in `.gitignore`).
 - Shape: `{"enabled": bool, "until": "session"}`.
-- Semantics: `enabled == false` means the simulate-* command SHOULD skip
-  the entire grounding pipeline for that run — no `[EVIDENCE BANK]`
-  injection, no `verify_claims` call, no Tier-2 external verification,
-  no Tier-3 CoVe challenge pass, and no post-meeting
-  `persona_studio.grounding.audit` invocation.
-- Default: missing file == `enabled: true`. The `"until": "session"`
-  field is advisory — the state persists across commands within the same
-  project until the user toggles again or deletes the file manually.
-- This task only wires up the toggle + documents the contract; the
-  `simulate-*.md` commands will be updated in a follow-up task.
+- Semantics: `enabled == false` means the simulate-* command MUST skip the
+  entire grounding pipeline for that run — no `[EVIDENCE BANK]` injection,
+  no `verify_claims` call, no Tier-2 external verification, no Tier-3 CoVe
+  challenge pass, and no post-meeting `persona_studio.grounding.audit`
+  invocation.
+- Fail-safe: missing file / malformed JSON / missing `enabled` key all
+  resolve to `enabled: true` (grounding stays ON). A broken flag file
+  never silently disables grounding.
+- Default: missing file == `enabled: true`. The `"until": "session"` field
+  is advisory — state persists across commands within the same project
+  until the user toggles again or deletes the file.
+- Canonical programmatic check from a simulate-* command:
+  ```bash
+  if [ "$(.venv/bin/python -m persona_studio.grounding.session status)" = "disabled" ]; then
+      # skip the entire grounding pipeline for this run
+      GROUNDING_ENABLED=false
+  else
+      GROUNDING_ENABLED=true
+  fi
+  ```
 
 ## Non-negotiable rules
 

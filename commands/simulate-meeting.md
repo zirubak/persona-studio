@@ -6,6 +6,23 @@ description: Facilitated meeting simulation. Usage: /persona-studio:simulate-mee
 
 $ARGUMENTS
 
+## Preamble — session grounding flag check
+
+```bash
+if [ "$(.venv/bin/python -m persona_studio.grounding.session status)" = "disabled" ]; then
+    GROUNDING_ENABLED=false
+    echo "[grounding] disabled for this session — skipping the grounding pipeline"
+else
+    GROUNDING_ENABLED=true
+fi
+```
+
+When `GROUNDING_ENABLED=false`: SKIP the `[EVIDENCE BANK]` retrieval,
+`verify_claims` calls, Tier-2 external-verification fallback, Tier-3 CoVe
+pass, and post-meeting `audit.py` invocation. The meeting still runs and
+produces a plain transcript. Users re-enable via `/persona-studio:studio`
+→ Toggle factual grounding.
+
 ## Step 0 — Normalize inputs
 
 Same participant validation as `/persona-studio:simulate-debate` (including the
