@@ -64,7 +64,8 @@ Use `AskUserQuestion` with this question, repeated until the user picks `Exit`:
   3. `Meeting simulation (facilitated)` — "A facilitator-led meeting with an agenda"
   4. `List avatars` — "Summary of saved personas"
   5. `Refine an avatar` — "Update specific sections of one persona"
-  6. `Exit` — "Exit the studio"
+  6. `Toggle factual grounding` — "Turn grounding ON/OFF for this session (default: ON). Brainstorming sessions may want it OFF to welcome divergent claims."
+  7. `Exit` — "Exit the studio"
 
 Route to the matching sub-flow below. After each sub-flow returns, come back to
 this menu instead of ending the session.
@@ -134,6 +135,73 @@ where `<scope>` is `project` or `global`. Then return to the menu.
 2. Execute the steps from `commands/persona-refine.md` inline for that persona
    — that command handles scope resolution internally and edits in-place (never
    crosses scopes silently).
+
+## Route F — Toggle factual grounding
+
+Session-scoped toggle for the entire factual-grounding pipeline
+(`[EVIDENCE BANK]` injection, verify_claims, Tier-2 external verification,
+Tier-3 CoVe, and post-meeting audit). Default: ON. Turning it OFF is the
+escape hatch for pure-brainstorming sessions where divergent / speculative
+claims are welcome and hallucinations should not be suppressed.
+
+State lives in a single JSON file at the project root: `data/grounding-session.json`.
+
+1. Read the current state:
+
+```bash
+.venv/bin/python - <<'PY'
+import json, pathlib
+path = pathlib.Path("data/grounding-session.json")
+if path.exists():
+    state = json.loads(path.read_text(encoding="utf-8"))
+else:
+    state = {"enabled": True, "until": "session"}
+print(json.dumps(state))
+PY
+```
+
+   - If the file does not exist, grounding is ON by default.
+
+2. Flip the `enabled` boolean and write back. On first toggle (file missing)
+   this writes `{"enabled": false, "until": "session"}`.
+
+```bash
+.venv/bin/python - <<'PY'
+import json, pathlib
+path = pathlib.Path("data/grounding-session.json")
+path.parent.mkdir(parents=True, exist_ok=True)
+if path.exists():
+    state = json.loads(path.read_text(encoding="utf-8"))
+    state["enabled"] = not bool(state.get("enabled", True))
+else:
+    state = {"enabled": False, "until": "session"}
+state["until"] = "session"
+path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
+print(json.dumps(state))
+PY
+```
+
+3. Print the new state to the user exactly as:
+   - `Factual grounding: ON` (when `enabled` is true)
+   - `Factual grounding: OFF (this session only)` (when `enabled` is false)
+
+4. Return to the main menu.
+
+**Flag contract (for `simulate-*.md` commands — follow-up task)**:
+
+- Path: `data/grounding-session.json` (project-local, never committed —
+  already covered by the `data/` entry in `.gitignore`).
+- Shape: `{"enabled": bool, "until": "session"}`.
+- Semantics: `enabled == false` means the simulate-* command SHOULD skip
+  the entire grounding pipeline for that run — no `[EVIDENCE BANK]`
+  injection, no `verify_claims` call, no Tier-2 external verification,
+  no Tier-3 CoVe challenge pass, and no post-meeting
+  `persona_studio.grounding.audit` invocation.
+- Default: missing file == `enabled: true`. The `"until": "session"`
+  field is advisory — the state persists across commands within the same
+  project until the user toggles again or deletes the file manually.
+- This task only wires up the toggle + documents the contract; the
+  `simulate-*.md` commands will be updated in a follow-up task.
 
 ## Non-negotiable rules
 

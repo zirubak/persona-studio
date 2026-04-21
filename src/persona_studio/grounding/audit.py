@@ -78,6 +78,7 @@ class AvatarStat:
     unverifiable: int
     external_verified: int = 0
     external_unverified: int = 0
+    recovered: int = 0
     grounding_score: float = 0.0
     top_unsupported: list[str] = field(default_factory=list)
 
@@ -102,6 +103,9 @@ _PARTICIPANTS_RE = re.compile(r"^participants:\s*\[([^\]]*)\]", re.MULTILINE)
 
 _EXTERNAL_VERIFIED_RE = re.compile(r"\[VERIFIED-EXTERNAL:[^\]]+\]")
 _EXTERNAL_UNVERIFIED_RE = re.compile(r"\[UNVERIFIED-EXTERNAL\]")
+_RECOVERED_RE = re.compile(
+    r"\[FACT-CHECKER CHALLENGE:[^\]]+\][^\[]*\[retract/defend\]"
+)
 
 
 def audit_transcript(path: Path) -> AuditReport:
@@ -140,14 +144,15 @@ def render_audit_section(report: AuditReport) -> str:
 
     lines.append(
         "| Avatar | Total | Supported | Unsupported | Unverifiable | "
-        "External-verified | External-unverified | Score |"
+        "External-verified | External-unverified | Recovered | Score |"
     )
-    lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
+    lines.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- |")
     for avatar, stat in sorted(report.avatars.items()):
         lines.append(
             f"| {avatar} | {stat.total_claims} | {stat.supported} | "
             f"{stat.unsupported} | {stat.unverifiable} | "
             f"{stat.external_verified} | {stat.external_unverified} | "
+            f"{stat.recovered} | "
             f"{stat.grounding_score:.2f} |"
         )
 
@@ -206,6 +211,11 @@ def _audit_avatar(avatar: str, transcript_text: str) -> AvatarStat | None:
     raw_joined = " ".join(quoted_lines)
     external_verified = len(_EXTERNAL_VERIFIED_RE.findall(raw_joined))
     external_unverified = len(_EXTERNAL_UNVERIFIED_RE.findall(raw_joined))
+    # Tier-3 CoVe retract pattern: a FACT-CHECKER CHALLENGE followed by a
+    # retract/defend marker on the same (or adjacent) blockquote line means
+    # the original UNVERIFIABLE claim was caught AND corrected on the
+    # record — count those as "recovered" (contributes positively to score).
+    recovered = len(_RECOVERED_RE.findall(raw_joined))
 
     full_text = strip_annotations(raw_joined)
     claims = extract_claims(full_text)
@@ -237,17 +247,26 @@ def _audit_avatar(avatar: str, transcript_text: str) -> AvatarStat | None:
     # extractor may not have classified as fact-assertions.
     effective_total = max(
         total_fact,
-        supported + unsupported + unverifiable + external_verified + external_unverified,
+        supported
+        + unsupported
+        + unverifiable
+        + external_verified
+        + external_unverified
+        + recovered,
     )
 
-    # Score semantics: SUPPORTED + EXTERNAL_VERIFIED both count as +1; the
-    # rest contribute nothing. "No factual claims" → 10.0 so short opinion
-    # turns don't drag the score down.
+    # Score semantics: SUPPORTED + EXTERNAL_VERIFIED + RECOVERED all count
+    # as +1; the rest contribute nothing. Recovered claims reward the
+    # grounding pipeline's most valuable moment — catching a hallucination
+    # AND getting a correction on the record. "No factual claims" → 10.0
+    # so short opinion turns don't drag the score down.
     if effective_total == 0:
         score = 10.0
     else:
         score = round(
-            10.0 * (supported + external_verified) / max(effective_total, 1),
+            10.0
+            * (supported + external_verified + recovered)
+            / max(effective_total, 1),
             2,
         )
 
@@ -262,6 +281,7 @@ def _audit_avatar(avatar: str, transcript_text: str) -> AvatarStat | None:
         unverifiable=unverifiable,
         external_verified=external_verified,
         external_unverified=external_unverified,
+        recovered=recovered,
         grounding_score=score,
         top_unsupported=top_unsupported,
     )
