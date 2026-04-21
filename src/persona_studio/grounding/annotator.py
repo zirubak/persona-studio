@@ -24,8 +24,27 @@ from persona_studio.grounding.types import (
 
 
 _TAG_RE = re.compile(
-    r"\s*\[(?:SUPPORTED:[^\]]+|UNSUPPORTED|UNVERIFIABLE|OPINION)\]"
+    r"\s*\[(?:SUPPORTED:[^\]]+|UNSUPPORTED|UNVERIFIABLE|OPINION"
+    r"|VERIFIED-EXTERNAL:[^\]]+|UNVERIFIED-EXTERNAL)\]"
 )
+
+
+def format_external_verified(source_url: str | None, tool: str) -> str:
+    """Render a [VERIFIED-EXTERNAL: ...] tag for a Tier-2 supported claim.
+
+    Tool is the name of the verifier (``perplexity`` / ``websearch``).
+    Any ``]`` in ``source_url`` is URL-encoded so the tag closing bracket
+    stays unambiguous.
+    """
+    if not source_url:
+        return f"[VERIFIED-EXTERNAL: via {tool}]"
+    safe_url = source_url.replace("]", "%5D").replace("[", "%5B")
+    return f"[VERIFIED-EXTERNAL: {tool} {safe_url}]"
+
+
+def format_external_unverified() -> str:
+    """Render the [UNVERIFIED-EXTERNAL] tag for claims no tool could verify."""
+    return "[UNVERIFIED-EXTERNAL]"
 
 
 def annotate_turn(text: str, results: Sequence[VerifyResult]) -> str:

@@ -63,13 +63,22 @@ def _merge_evidence(
 
 @dataclass(frozen=True)
 class AvatarStat:
-    """Aggregated grounding statistics for one avatar in one transcript."""
+    """Aggregated grounding statistics for one avatar in one transcript.
+
+    ``external_verified`` / ``external_unverified`` count inline
+    ``[VERIFIED-EXTERNAL: ...]`` and ``[UNVERIFIED-EXTERNAL]`` tags that
+    Tier-2 verification (Perplexity / WebSearch, orchestrated by the
+    simulate-* commands at runtime) produced. Score treats externally
+    verified claims as supported.
+    """
 
     total_claims: int
     supported: int
     unsupported: int
     unverifiable: int
-    grounding_score: float  # 0.0-10.0
+    external_verified: int = 0
+    external_unverified: int = 0
+    grounding_score: float = 0.0
     top_unsupported: list[str] = field(default_factory=list)
 
 
@@ -90,6 +99,9 @@ _H3_RE = re.compile(r"^### (.+)$", re.MULTILINE)
 _BLOCKQUOTE_RE = re.compile(r"^>\s?(.*)$", re.MULTILINE)
 _FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 _PARTICIPANTS_RE = re.compile(r"^participants:\s*\[([^\]]*)\]", re.MULTILINE)
+
+_EXTERNAL_VERIFIED_RE = re.compile(r"\[VERIFIED-EXTERNAL:[^\]]+\]")
+_EXTERNAL_UNVERIFIED_RE = re.compile(r"\[UNVERIFIED-EXTERNAL\]")
 
 
 def audit_transcript(path: Path) -> AuditReport:
@@ -126,12 +138,16 @@ def render_audit_section(report: AuditReport) -> str:
         lines.append("_No avatars detected in transcript; audit skipped._")
         return "\n".join(lines)
 
-    lines.append("| Avatar | Total | Supported | Unsupported | Unverifiable | Score |")
-    lines.append("| --- | --- | --- | --- | --- | --- |")
+    lines.append(
+        "| Avatar | Total | Supported | Unsupported | Unverifiable | "
+        "External-verified | External-unverified | Score |"
+    )
+    lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
     for avatar, stat in sorted(report.avatars.items()):
         lines.append(
             f"| {avatar} | {stat.total_claims} | {stat.supported} | "
             f"{stat.unsupported} | {stat.unverifiable} | "
+            f"{stat.external_verified} | {stat.external_unverified} | "
             f"{stat.grounding_score:.2f} |"
         )
 
@@ -176,13 +192,23 @@ def _audit_avatar(avatar: str, transcript_text: str) -> AvatarStat | None:
     that live in the corpus even when the debate topic keywords don't overlap
     with the corpus keywords. Pre-turn retrieval (in simulate-*.md commands)
     remains topic-based — its job is prompt priming, not audit precision.
+
+    Phase B additions: count inline ``[VERIFIED-EXTERNAL: ...]`` and
+    ``[UNVERIFIED-EXTERNAL]`` tags already present on the turns (inserted
+    at runtime by the simulate-* commands after a Tier-2 call). External
+    verifications count toward ``supported`` in the score formula.
     """
     quoted_lines = _collect_avatar_quotes(avatar, transcript_text)
     if not quoted_lines:
         return None
 
-    full_text = " ".join(quoted_lines)
-    claims = extract_claims(strip_annotations(full_text))
+    # Count pre-existing external tags BEFORE stripping annotations.
+    raw_joined = " ".join(quoted_lines)
+    external_verified = len(_EXTERNAL_VERIFIED_RE.findall(raw_joined))
+    external_unverified = len(_EXTERNAL_UNVERIFIED_RE.findall(raw_joined))
+
+    full_text = strip_annotations(raw_joined)
+    claims = extract_claims(full_text)
 
     topic = _parse_topic(transcript_text) or avatar
     topic_evidence = retrieve_evidence(avatar, topic=topic, k=8)
@@ -205,26 +231,37 @@ def _audit_avatar(avatar: str, transcript_text: str) -> AvatarStat | None:
         and r.claim.kind is ClaimKind.FACT_ASSERTION
     )
 
-    # Score semantics: only SUPPORTED claims count positively. UNVERIFIABLE
-    # is not rewarded — "I made a factual claim nothing could back up" is a
-    # failure mode, not a neutral outcome. UNSUPPORTED (contradicted) is the
-    # same bucket for scoring purposes. A transcript with zero factual
-    # claims gets 10.0 (nothing to fail) so short "pure opinion" turns
-    # don't drag the score down.
-    if total_fact == 0:
+    # When the transcript carried external annotations, we pick the larger
+    # of (internal_total, annotation_count) as the effective denominator.
+    # This keeps ratios sensible when Tier-2 marked claims Tier-1's claim
+    # extractor may not have classified as fact-assertions.
+    effective_total = max(
+        total_fact,
+        supported + unsupported + unverifiable + external_verified + external_unverified,
+    )
+
+    # Score semantics: SUPPORTED + EXTERNAL_VERIFIED both count as +1; the
+    # rest contribute nothing. "No factual claims" → 10.0 so short opinion
+    # turns don't drag the score down.
+    if effective_total == 0:
         score = 10.0
     else:
-        score = round(10.0 * supported / max(total_fact, 1), 2)
+        score = round(
+            10.0 * (supported + external_verified) / max(effective_total, 1),
+            2,
+        )
 
     top_unsupported = [
         r.claim.text for r in results if r.status is VerifyStatus.UNSUPPORTED
     ][:5]
 
     return AvatarStat(
-        total_claims=total_fact,
+        total_claims=effective_total,
         supported=supported,
         unsupported=unsupported,
         unverifiable=unverifiable,
+        external_verified=external_verified,
+        external_unverified=external_unverified,
         grounding_score=score,
         top_unsupported=top_unsupported,
     )

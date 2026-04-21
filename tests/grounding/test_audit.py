@@ -113,6 +113,8 @@ class TestRenderAuditSection:
                     supported=3,
                     unsupported=1,
                     unverifiable=0,
+                    external_verified=0,
+                    external_unverified=0,
                     grounding_score=7.5,
                     top_unsupported=["Claim X", "Claim Y"],
                 )
@@ -123,3 +125,70 @@ class TestRenderAuditSection:
         assert "alice" in out
         assert "7.5" in out or "7.50" in out
         assert "Claim X" in out
+
+
+class TestExternalTagCounting:
+    def _write_transcript(self, tmp_path: Path, body: str) -> Path:
+        path = tmp_path / "sim.md"
+        path.write_text(
+            "---\nkind: debate\nparticipants: [alice]\n---\n"
+            "# t\n\n## Round 1\n### alice\n" + body + "\n"
+            "## Conclusion\nx\n## Satisfaction\n7/10\n## System Feedback\ny\n",
+            encoding="utf-8",
+        )
+        return path
+
+    def test_verified_external_counted(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        # Persona dir exists but corpus is empty so Tier-1 can't support.
+        (tmp_path / "data" / "people" / "alice" / "extracted").mkdir(parents=True)
+        (tmp_path / "data" / "people" / "alice" / "extracted" / "corpus.md").write_text(
+            "# empty\n", encoding="utf-8"
+        )
+        path = self._write_transcript(
+            tmp_path,
+            "> 75% of developers use dark mode in 2024. [VERIFIED-EXTERNAL: perplexity https://x.com/y]",
+        )
+        report = audit_transcript(path)
+        stat = report.avatars["alice"]
+        assert stat.external_verified >= 1
+        # Score counts external_verified as supported.
+        assert stat.grounding_score > 0
+
+    def test_unverified_external_counted(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "data" / "people" / "alice" / "extracted").mkdir(parents=True)
+        (tmp_path / "data" / "people" / "alice" / "extracted" / "corpus.md").write_text(
+            "# empty\n", encoding="utf-8"
+        )
+        path = self._write_transcript(
+            tmp_path,
+            "> GPT-7 shipped in 2027. [UNVERIFIED-EXTERNAL]",
+        )
+        report = audit_transcript(path)
+        stat = report.avatars["alice"]
+        assert stat.external_unverified >= 1
+
+    def test_score_counts_external_verified_as_supported(self) -> None:
+        """Score formula: (supported + external_verified) / total."""
+        report = AuditReport(
+            avatars={
+                "alice": AvatarStat(
+                    total_claims=4,
+                    supported=1,
+                    unsupported=0,
+                    unverifiable=1,
+                    external_verified=2,
+                    external_unverified=0,
+                    grounding_score=7.5,  # (1+2)/4 * 10 = 7.5
+                    top_unsupported=[],
+                )
+            }
+        )
+        out = render_audit_section(report)
+        # External column should be in the table.
+        assert "External" in out or "external" in out

@@ -82,6 +82,12 @@ For `r in 1..N`:
     2. `SendMessage(to="avatar-<p>", content=<dispatch>)`
     3. Collect reply from teammate output.
     4. Append to transcript as `(Round r, <p>): <reply>`.
+    5. **Tier-2 pass** (same pattern as `/persona-studio:simulate-debate` Step 3.5):
+       `verify_claims --persona <p> --topic "<topic>" --only-high-risk` on the
+       reply text; for each UNVERIFIABLE high-risk claim call Perplexity (if
+       `mcp__perplexity__search` is available) or WebSearch, insert
+       `[VERIFIED-EXTERNAL: ...]` or `[UNVERIFIED-EXTERNAL]` tag into the
+       transcript line. Tool preference per `data/grounding-config.json`.
 
   After each round, open a user interruption window (10 s):
   "Round <r> complete. Want to intervene? Type into any avatar pane, or leave a

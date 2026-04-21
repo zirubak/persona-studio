@@ -97,3 +97,44 @@ class TestAnnotateTurn:
         r = _result(c, VerifyStatus.SUPPORTED, citation="corpus.md:10-12")
         annotated = annotate_turn(text, [r])
         assert strip_annotations(annotated).strip() == text.strip()
+
+
+class TestExternalTags:
+    def test_format_verified_with_url(self) -> None:
+        from persona_studio.grounding.annotator import format_external_verified
+
+        tag = format_external_verified("https://example.com/study", "perplexity")
+        assert tag == "[VERIFIED-EXTERNAL: perplexity https://example.com/study]"
+
+    def test_format_verified_without_url(self) -> None:
+        from persona_studio.grounding.annotator import format_external_verified
+
+        tag = format_external_verified(None, "websearch")
+        assert tag == "[VERIFIED-EXTERNAL: via websearch]"
+
+    def test_format_unverified(self) -> None:
+        from persona_studio.grounding.annotator import format_external_unverified
+
+        assert format_external_unverified() == "[UNVERIFIED-EXTERNAL]"
+
+    def test_strip_removes_external_tags(self) -> None:
+        """strip_annotations must also clear the new external tags."""
+        text = (
+            "75% of devs use dark mode. [VERIFIED-EXTERNAL: perplexity https://x.com/y] "
+            "GPT-7 shipped in 2027. [UNVERIFIED-EXTERNAL]"
+        )
+        cleaned = strip_annotations(text)
+        assert "VERIFIED-EXTERNAL" not in cleaned
+        assert "UNVERIFIED-EXTERNAL" not in cleaned
+        # Source text survives.
+        assert "dark mode" in cleaned
+        assert "GPT-7" in cleaned
+
+    def test_url_with_brackets_is_escaped(self) -> None:
+        """A URL containing ']' must not prematurely close the tag."""
+        from persona_studio.grounding.annotator import format_external_verified
+
+        tag = format_external_verified("https://x.com/a]b", "perplexity")
+        # We escape ] inside URL so tag boundary is unambiguous.
+        assert tag.count("]") == 1  # Only the closing bracket remains.
+        assert "a%5Db" in tag or "a%5db" in tag or "a\\]b" in tag

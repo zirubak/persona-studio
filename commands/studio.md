@@ -29,6 +29,29 @@ warning. Audio and YouTube paths will fail until the user installs it. Mention
 this with the platform-specific hint printed by the script (brew on darwin,
 apt/dnf/pacman on linux).
 
+## Step 1.5 — Factual-grounding Tier-2 detection (first-run only)
+
+If `data/grounding-config.json` does not exist yet, detect the Tier-2
+external-verification tool available in this session (`perplexity` if any
+`mcp__perplexity__*` tool is visible in the tool list; otherwise
+`websearch` — always available built-in; otherwise `none`) and persist:
+
+```bash
+.venv/bin/python - <<'PY'
+from persona_studio.grounding.config import (
+    GroundingConfig, load_config, save_config,
+)
+if load_config() is None:
+    # Placeholder: command-layer substitutes the detected tool name here.
+    save_config(GroundingConfig.now("websearch"))
+    print("Factual grounding: Tier-1 (corpus) + Tier-2 (websearch)")
+PY
+```
+
+If `perplexity` MCP is detected in the current session, pass
+`"perplexity"` to `GroundingConfig.now(...)` instead. The message printed
+here tells the user which Tier-2 tool will be used during simulations.
+
 ## Step 2 — Show the main menu (loop)
 
 Use `AskUserQuestion` with this question, repeated until the user picks `Exit`:
