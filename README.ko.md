@@ -129,6 +129,24 @@ Claude Code 안에서:
 
 > Tip: macOS에서는 Finder에서 폴더를 터미널로 드래그하면 전체 경로가 자동으로 붙습니다.
 
+### 4.5단계 — 새 버전으로 업데이트
+
+Claude Code 는 설치 시점의 플러그인을 cache 에 저장합니다. `git pull` 로 새 코드를 받아도 **active 플러그인은 자동 갱신되지 않습니다** — Claude Code 에 명시적으로 알려줘야 합니다:
+
+```
+/plugin marketplace update persona-studio-local
+/plugin install persona-studio@persona-studio-local
+/reload-plugins
+```
+
+`/reload-plugins` 후 다음 `/persona-studio:studio` 호출부터 새 버전 active. 실제로 로딩된 버전 확인:
+
+```bash
+ls ~/.claude/plugins/cache/persona-studio-local/persona-studio/
+```
+
+여러 버전 디렉토리가 공존할 수 있습니다 (오래된 cache 는 자동 삭제 안 됨). Claude Code 가 로드하는 건 현재 repo 의 `marketplace.json` 과 일치하는 버전. 업데이트 후에도 오래된 버전이 active 로 보이면 Claude Code 세션을 재시작하세요.
+
 ### 5단계 — 메뉴 실행
 
 ```
@@ -475,9 +493,11 @@ node scripts/build_docx_skill.js <input.md> <output.docx>
 - [x] **v0.2** — split-panes agent teams
 - [x] **v0.3** — Ralph loop + 만족도 gating + 3축 스키마 validator
 - [x] **v0.4** — 플러그인 네임스페이싱 (`persona-studio:*`)
-- [ ] **v0.5** — 회의 피드백으로부터 아바타 자동 개선
-- [ ] **v0.6** — 과거 회의 검색 (RAG 인덱스)
-- [ ] **v0.7** — 웹 대시보드 (Streamlit) — 비CLI 사용자용
+- [x] **v0.5** — 글로벌 persona 라이브러리 (celebrity 모드는 `~/.persona-studio/`)
+- [x] **v0.6** — 3-tier 사실 기반 스택 (corpus + Perplexity/WebSearch + CoVe) + retract/defend 사이클
+- [ ] **v0.7** — 회의 피드백으로부터 아바타 자동 개선
+- [ ] **v0.8** — 과거 회의 검색 (`simulations/` RAG 인덱스)
+- [ ] **v0.9** — 웹 대시보드 (Streamlit) — 비CLI 사용자용
 - [ ] **v1.0** — Public 마켓플레이스 배포
 
 <br/>

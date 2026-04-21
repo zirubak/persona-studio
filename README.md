@@ -129,6 +129,24 @@ Inside Claude Code, type:
 
 > Tip: On macOS you can drag the folder into the terminal to get the full path automatically.
 
+### Step 4.5 — Updating to a new version
+
+Claude Code caches the plugin at install time. Pulling new code with `git pull` does NOT refresh the active plugin — you have to tell Claude Code explicitly:
+
+```
+/plugin marketplace update persona-studio-local
+/plugin install persona-studio@persona-studio-local
+/reload-plugins
+```
+
+After `/reload-plugins` you should see the new version active in the next `/persona-studio:studio` invocation. Check which version is actually loaded by running:
+
+```bash
+ls ~/.claude/plugins/cache/persona-studio-local/persona-studio/
+```
+
+Multiple version directories can coexist (old caches are not auto-pruned). The one Claude Code loads is whatever version matches the current `marketplace.json` in the repo. If you see a stale version after an update, restart the Claude Code session.
+
 ### Step 5 — Launch the menu
 
 ```
@@ -475,9 +493,11 @@ After editing a command or agent, reload the plugin in Claude Code:
 - [x] **v0.2** — Split-panes agent teams
 - [x] **v0.3** — Ralph loop + satisfaction gating + three-axis schema validator
 - [x] **v0.4** — Plugin namespacing (`persona-studio:*`)
-- [ ] **v0.5** — Auto-refine avatars from meeting feedback
-- [ ] **v0.6** — Search across past meetings (RAG index)
-- [ ] **v0.7** — Web dashboard (Streamlit) for non-CLI users
+- [x] **v0.5** — Global persona library (celebrity-mode in `~/.persona-studio/`)
+- [x] **v0.6** — Three-tier factual-grounding stack (corpus + Perplexity/WebSearch + CoVe) with retract/defend cycle
+- [ ] **v0.7** — Auto-refine avatars from meeting feedback
+- [ ] **v0.8** — Search across past meetings (RAG index over `simulations/`)
+- [ ] **v0.9** — Web dashboard (Streamlit) for non-CLI users
 - [ ] **v1.0** — Public marketplace release
 
 <br/>
