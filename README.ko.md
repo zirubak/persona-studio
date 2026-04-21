@@ -285,12 +285,16 @@ Claude Code 안에서:
 
 ## 사실 기반 (환각 감소)
 
-모든 시뮬레이션은 기본적으로 2-tier grounding layer 를 실행합니다:
+모든 시뮬레이션은 기본적으로 3-tier grounding stack 을 실행합니다. 덕분에 transcript 는 **라인 단위로** 어떤 문장이 실제 evidence 에 근거하고 어떤 문장이 모델이 지어낸 것인지 알려줍니다. transcript 끝의 `## Factual Grounding` 테이블이 아바타별 score 를 요약하고, Ralph loop 은 이 score 를 기본 4번째 criterion (goal 8/10) 으로 읽어서 hallucinate 가 심한 경우 자동으로 re-run 을 트리거합니다.
 
-- **Tier-1 (항상 켜짐, 오프라인)** — 각 아바타가 말하기 전에 그 아바타의 코퍼스에서 검색된 evidence 로 프롬프트가 보강됩니다. 회의 종료 후, 모든 claim 이 코퍼스 와 매칭되어 `[SUPPORTED: source:line]` / `[UNSUPPORTED]` / `[UNVERIFIABLE]` / `[OPINION]` 태그가 붙습니다. transcript 끝에 `## Factual Grounding` 테이블이 아바타별 hallucination rate 를 요약합니다.
-- **Tier-2 (외부, 선택)** — Tier-1 이 놓친 claim 을 Perplexity MCP (설치되어 있으면) 또는 내장 WebSearch (항상 사용 가능) 로 재확인합니다. 외부적으로 검증된 claim 은 `[VERIFIED-EXTERNAL: 도구 url]` 태그, 확인 불가 는 `[UNVERIFIED-EXTERNAL]`. **Perplexity MCP 는 선택사항 — 대부분의 사용자는 없고, WebSearch fallback 으로 충분합니다.**
+transcript 에 인라인으로 붙는 태그들:
 
-Ralph loop 은 아바타별 grounding score 를 기본 4번째 criterion (goal 8/10) 으로 읽어서, hallucinate 가 심한 경우 자동으로 re-run 을 트리거합니다. 순수 brainstorming 세션처럼 hallucination 이 필요하면 `/persona-studio:studio` 메뉴에서 전체 레이어를 끌 수 있습니다.
+- `[SUPPORTED: source:line]` — Tier-1 이 아바타의 로컬 corpus 에서 근거를 찾음.
+- `[UNSUPPORTED]` / `[UNVERIFIABLE]` / `[OPINION]` — Tier-1 이 모순/누락/비사실적 내용으로 판정.
+- `[VERIFIED-EXTERNAL: 도구 url]` / `[UNVERIFIED-EXTERNAL]` — Tier-2 가 Perplexity MCP (설치된 경우) 또는 WebSearch 로 재확인한 결과.
+- `[FACT-CHECKER CHALLENGE: 이유]` — Tier-3 Chain-of-Verification 이 불일치를 포착해서 아바타가 `[retract/defend]` 블록에서 철회·인용·재진술하도록 강제.
+
+순수 brainstorming 세션처럼 hallucination 이 필요하면 `/persona-studio:studio` 메뉴에서 전체 레이어를 끌 수 있습니다. 전체 동작 원리는 [docs/FACTUAL_GROUNDING.md](docs/FACTUAL_GROUNDING.md) 에서 확인하세요 (영문).
 
 <br/>
 

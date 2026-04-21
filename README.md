@@ -285,12 +285,16 @@ Add it to your dotfiles-sync or backup set and your library travels with you acr
 
 ## Factual grounding (hallucination reduction)
 
-Every simulation runs a two-tier grounding layer by default:
+Every simulation runs a three-tier grounding stack by default, so the transcript tells you — at the line level — which sentences are anchored in real evidence and which ones the model invented. A `## Factual Grounding` table at the end of each transcript summarizes per-avatar scores, and the Ralph loop reads that score as a default 4th criterion (goal 8/10) to auto-trigger a re-run when an avatar hallucinates too much.
 
-- **Tier-1 (always on, offline)** — before each avatar speaks, the prompt is augmented with evidence retrieved from that avatar's corpus. After the meeting, every claim is matched against the corpus and tagged `[SUPPORTED: source:line]` / `[UNSUPPORTED]` / `[UNVERIFIABLE]` / `[OPINION]`. A `## Factual Grounding` table at the end of each transcript summarizes per-avatar hallucination rates.
-- **Tier-2 (external, optional)** — claims that Tier-1 can't place are re-checked against Perplexity MCP (if you have it installed) or the built-in WebSearch (always available). Externally verified claims get a `[VERIFIED-EXTERNAL: tool url]` tag; unverifiable ones stay `[UNVERIFIED-EXTERNAL]`. Perplexity MCP is optional — **most users don't have it, and WebSearch is a perfectly fine fallback**.
+Tags you will see inline in the transcript:
 
-The Ralph loop reads the per-avatar grounding score as a default 4th criterion (goal 8/10) and triggers a re-run if an avatar is hallucinating too much. Disable the whole layer for pure-brainstorm sessions via the `/persona-studio:studio` menu if you want the hallucinations back.
+- `[SUPPORTED: source:line]` — Tier-1 found matching evidence in the persona's local corpus.
+- `[UNSUPPORTED]` / `[UNVERIFIABLE]` / `[OPINION]` — Tier-1 found contradicting, missing, or non-factual content.
+- `[VERIFIED-EXTERNAL: tool url]` / `[UNVERIFIED-EXTERNAL]` — Tier-2 checked the claim via Perplexity MCP (if installed) or WebSearch.
+- `[FACT-CHECKER CHALLENGE: reason]` — Tier-3 Chain-of-Verification caught a discrepancy and forced the avatar to retract, cite, or restate under a `[retract/defend]` block.
+
+Disable the whole layer for pure-brainstorm sessions via the `/persona-studio:studio` menu. See [docs/FACTUAL_GROUNDING.md](docs/FACTUAL_GROUNDING.md) for the full mechanics.
 
 <br/>
 

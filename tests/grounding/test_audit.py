@@ -115,6 +115,7 @@ class TestRenderAuditSection:
                     unverifiable=0,
                     external_verified=0,
                     external_unverified=0,
+                    recovered=0,
                     grounding_score=7.5,
                     top_unsupported=["Claim X", "Claim Y"],
                 )
@@ -174,7 +175,7 @@ class TestExternalTagCounting:
         assert stat.external_unverified >= 1
 
     def test_score_counts_external_verified_as_supported(self) -> None:
-        """Score formula: (supported + external_verified) / total."""
+        """Score formula: (supported + external_verified + recovered) / total."""
         report = AuditReport(
             avatars={
                 "alice": AvatarStat(
@@ -184,7 +185,8 @@ class TestExternalTagCounting:
                     unverifiable=1,
                     external_verified=2,
                     external_unverified=0,
-                    grounding_score=7.5,  # (1+2)/4 * 10 = 7.5
+                    recovered=0,
+                    grounding_score=7.5,  # (1+2+0)/4 * 10 = 7.5
                     top_unsupported=[],
                 )
             }
@@ -192,3 +194,73 @@ class TestExternalTagCounting:
         out = render_audit_section(report)
         # External column should be in the table.
         assert "External" in out or "external" in out
+
+
+class TestRecoveredClaims:
+    """Tier-3 CoVe retract pattern: challenge + retract = recovered."""
+
+    def _write_transcript(self, tmp_path: Path, body: str) -> Path:
+        path = tmp_path / "sim.md"
+        path.write_text(
+            "---\nkind: debate\nparticipants: [alice]\n---\n"
+            "# t\n\n## Round 1\n### alice\n" + body + "\n"
+            "## Conclusion\nx\n## Satisfaction\n7/10\n## System Feedback\ny\n",
+            encoding="utf-8",
+        )
+        return path
+
+    def test_retract_counted_as_recovered(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "data" / "people" / "alice" / "extracted").mkdir(parents=True)
+        (tmp_path / "data" / "people" / "alice" / "extracted" / "corpus.md").write_text(
+            "# empty\n", encoding="utf-8"
+        )
+        path = self._write_transcript(
+            tmp_path,
+            "> Stripe was founded in 2008. "
+            "[FACT-CHECKER CHALLENGE: Stripe was founded in 2010, not 2008] "
+            "[retract/defend]\n"
+            "> I retract — Stripe was founded in 2010.",
+        )
+        report = audit_transcript(path)
+        stat = report.avatars["alice"]
+        assert stat.recovered >= 1
+        assert stat.grounding_score > 0
+
+    def test_challenge_without_retract_not_counted(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.chdir(tmp_path)
+        (tmp_path / "data" / "people" / "alice" / "extracted").mkdir(parents=True)
+        (tmp_path / "data" / "people" / "alice" / "extracted" / "corpus.md").write_text(
+            "# empty\n", encoding="utf-8"
+        )
+        path = self._write_transcript(
+            tmp_path,
+            "> Stripe was founded in 2008. "
+            "[FACT-CHECKER CHALLENGE: Stripe was founded in 2010, not 2008]",
+        )
+        report = audit_transcript(path)
+        stat = report.avatars["alice"]
+        assert stat.recovered == 0
+
+    def test_render_section_includes_recovered_column(self) -> None:
+        report = AuditReport(
+            avatars={
+                "alice": AvatarStat(
+                    total_claims=3,
+                    supported=1,
+                    unsupported=0,
+                    unverifiable=1,
+                    external_verified=0,
+                    external_unverified=0,
+                    recovered=1,
+                    grounding_score=6.67,  # (1+0+1)/3 * 10 = 6.67
+                    top_unsupported=[],
+                )
+            }
+        )
+        out = render_audit_section(report)
+        assert "Recovered" in out
