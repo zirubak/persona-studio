@@ -11,8 +11,8 @@
     {
       "name": "persona-studio",
       "source": "./",
-      "description": "Build AI persona avatars from files (private) or names (celebrity), then run virtual meetings and debates with tmux split-panes agent teams. Includes Ralph satisfaction-score loop and automatic Word/PowerPoint transcript generation.",
-      "version": "0.5.0",
+      "description": "Build AI persona avatars from files (private) or names (celebrity), then run virtual meetings and debates with tmux split-panes agent teams. Includes a three-tier factual-grounding layer (corpus + Perplexity/WebSearch + CoVe) to catch hallucinations, Ralph satisfaction-score loop, and automatic Word/PowerPoint transcript generation.",
+      "version": "0.6.0",
       "author": {
         "name": "Baek, JH",
         "email": "379487+zirubak@users.noreply.github.com"
