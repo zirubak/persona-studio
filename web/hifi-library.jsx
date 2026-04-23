@@ -2,7 +2,7 @@
 
 (function(){
   const { tokens: T, PEOPLE: P, InitialsAv: PhotoAv, AppNav, Browser, Note, Kalam, Mono, Display, Btn, Eyebrow, hueBg, hueSoft, hueDeep } = window.HF;
-  const { useState } = React;
+  const { useState, useEffect } = React;
 
   // ── Import modal ──────────────────────────────────────────────────────────
   // Three ingestion paths: URL (blogs, feeds), File (txt/md/pdf/chat export),
@@ -207,6 +207,18 @@
   // A · EDITORIAL GRID — feels like a masthead of contributors
   function LibraryA(){
     const [importOpen, setImportOpen] = useState(false);
+    // Phase 1 wiring: fetch real personas from the local backend. On
+    // failure (server not running, fetch blocked, etc.) we fall through
+    // to `P` (window.HF.PEOPLE mock) so the screen still renders —
+    // offline viewers and the static prototype preview keep working.
+    const [people, setPeople] = useState(null);
+    useEffect(() => {
+      fetch('/api/personas')
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(data => Array.isArray(data) ? setPeople(data) : setPeople([]))
+        .catch(() => setPeople(null));
+    }, []);
+    const list = (people !== null && people.length > 0) ? people : P;
     return (
       <Browser>
         <AppNav active="library"/>
@@ -229,8 +241,8 @@
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
-            {P.map((p, i) => (
-              <div key={p.id} style={{ background: '#fff', borderRadius: 18, overflow: 'hidden', border: `1px solid ${T.hair}` }}>
+            {list.map((p, i) => (
+              <div key={p.id || p.name} style={{ background: '#fff', borderRadius: 18, overflow: 'hidden', border: `1px solid ${T.hair}` }}>
                 {/* Portrait header */}
                 <div style={{ position: 'relative', height: 220, background: `linear-gradient(180deg, ${hueSoft(p.hue)} 0%, ${hueBg(p.hue)}33 100%)`, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: 16 }}>
                   <PhotoAv p={p} size={130}/>
@@ -244,7 +256,7 @@
                   <div style={{ fontFamily: T.fDisplay, fontSize: 22, fontWeight: 400, letterSpacing: -0.5, lineHeight: 1.1 }}>{p.name}</div>
                   <div style={{ fontSize: 12, color: T.mute, marginTop: 4 }}>{p.role}</div>
                   <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${T.hair}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Mono size={10}>b.{p.born} · {p.corpus}</Mono>
+                    <Mono size={10}>{p.born ? `b.${p.born}` : ''}{p.born && p.corpus ? ' · ' : ''}{p.corpus || ''}</Mono>
                     <div style={{ fontSize: 13, color: T.accent }}>→</div>
                   </div>
                 </div>

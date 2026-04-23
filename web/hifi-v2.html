@@ -91,7 +91,11 @@
       library: [
         { top: 0, left: 0, w: '100%', h: 56, to: '__nav', title: 'Top nav' }, // handled by nav bar below
         { top: 160, right: 80, w: 140, h: 40, to: 'create', title: '+ New avatar' },
-        { top: 240, left: 72, w: 240, h: 340, to: 'detail', title: 'Open Paul Graham' },
+        // Phase 1: Library→Detail hotspot disabled — clicking a real persona
+        // card would land on the mock Paul Graham detail screen, which is
+        // jarring once /api/personas serves live data. Phase 2 will ship a
+        // real detail page keyed off /api/personas/{name} and re-enable this.
+        // { top: 240, left: 72, w: 240, h: 340, to: 'detail', title: 'Open Paul Graham' },
       ],
       detail:  [
         { top: 500, left: 72, w: 300, h: 50, to: 'setup', title: 'Start simulation →' },

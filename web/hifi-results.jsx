@@ -2,6 +2,7 @@
 
 (function(){
   const { tokens: T, PEOPLE: P, InitialsAv: PhotoAv, AppNav, Browser, Note, Kalam, Mono, RalphRing, Btn, Eyebrow, hueBg, hueSoft, hueDeep } = window.HF;
+  const { useState, useEffect } = React;
 
   // Ralph trajectory — shows iteration-over-iteration improvement
   const RalphTrajectory = ({ scores = [5.2, 6.4, 8.1], target = 7, width = 420, height = 140 }) => {
@@ -61,32 +62,55 @@
 
   // A · SCORECARD HERO — celebrate the result
   function ResultsA(){
-    const criteria = [
+    // Phase 1 wiring: fetch the list of past simulations and overlay
+    // the newest one's topic + score onto the hero. The criteria /
+    // trajectory / transcript preview below stay mock for this phase —
+    // per-simulation detail needs /api/simulations/{id} which lands in
+    // Phase 2. On empty library or fetch failure we fall through to
+    // the original "Mobile vs web first" mock so offline viewers still
+    // see a complete-looking screen.
+    const [latest, setLatest] = useState(null);  // null = not-yet-fetched
+    useEffect(() => {
+      fetch('/api/simulations')
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
+        .then(data => setLatest(Array.isArray(data) && data.length > 0 ? data[0] : null))
+        .catch(() => setLatest(null));
+    }, []);
+
+    const mockCriteria = [
       { label: 'Clarity',          score: 8.4, target: 7 },
       { label: 'Disagreement',     score: 8.9, target: 7 },
       { label: 'Evidence cited',   score: 7.6, target: 7 },
       { label: 'Resolution',       score: 7.2, target: 7 },
       { label: 'Voice fidelity',   score: 8.8, target: 7 },
     ];
+    const criteria = mockCriteria;  // real criteria arrive in Phase 2
+
+    const title = latest?.topic ?? 'Mobile vs web first';
+    const subtitle = latest ? '' : 'in 2026?';
+    const heroScore = (latest && typeof latest.score === 'number') ? latest.score : 8.1;
+    const heroEyebrow = latest
+      ? `● ${String(latest.kind || 'simulation').toUpperCase()} · ${latest.participants?.length || 0} VOICES`
+      : '● RALPH PASSED · ITER 3 OF 3';
+
     return (
       <Browser url="localhost:7777/sim/20260421T1404.../results">
         <AppNav active="results"/>
         <div style={{ flex: 1, overflow: 'auto', padding: '48px 80px' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 6 }}>
-            <Mono color={T.mute}>← simulation · 20260421T1404</Mono>
+            <Mono color={T.mute}>← simulation · {latest?.id || '20260421T1404'}</Mono>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px', gap: 48, alignItems: 'flex-end', marginBottom: 40 }}>
             <div>
-              <Eyebrow color={T.cool}>● RALPH PASSED · ITER 3 OF 3</Eyebrow>
+              <Eyebrow color={T.cool}>{heroEyebrow}</Eyebrow>
               <div style={{ fontFamily: T.fDisplay, fontWeight: 400, fontSize: 56, letterSpacing: -1.8, lineHeight: 1.05, marginTop: 14 }}>
-                Mobile vs web first<br/>
-                <span style={{ fontStyle: 'italic', fontWeight: 300 }}>in 2026?</span>
+                {title}{subtitle && <><br/><span style={{ fontStyle: 'italic', fontWeight: 300 }}>{subtitle}</span></>}
               </div>
               <div style={{ fontSize: 15, color: T.mute, marginTop: 14, maxWidth: 560, lineHeight: 1.5 }}>
                 Three rounds. One conclusion: start with the web because distribution compounds and friction is lowest — unless your specific user's touchpoint is mobile-only.
               </div>
             </div>
-            <RalphRing score={8.1} target={7} size={180}/>
+            <RalphRing score={heroScore} target={7} size={180}/>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 24, marginBottom: 40 }}>
