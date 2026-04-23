@@ -1,0 +1,204 @@
+"""Static regression tests for the browser prototype under web/.
+
+We don't run a full headless-browser E2E in CI — that requires a chromium
+install and slows the suite down significantly for what is today a
+static HTML bundle. Instead this test file guards the failure modes most
+likely to break the prototype after a file move / rename / accidental
+delete:
+
+  * every JSX file referenced by <script> tags in hifi-v2.html actually
+    exists on disk;
+  * the HTML parses cleanly and has the expected entry markers;
+  * the license disambiguation note survives at the top of web/README.md;
+  * the top-level README (EN + KO) points at web/ for the browser
+    prototype section.
+
+The live clickable end-to-end — 9-screen navigation, localStorage
+persistence, keyboard arrows, happy-path hotspots — was verified
+manually via Playwright on 2026-04-23 (see web/README.md → "Testing the
+prototype"). Re-run that procedure when making substantive UI changes.
+"""
+from __future__ import annotations
+
+import html.parser
+import re
+from pathlib import Path
+
+import pytest
+
+
+REPO = Path(__file__).resolve().parent.parent.parent
+WEB = REPO / "web"
+
+
+class _ScriptSrcExtractor(html.parser.HTMLParser):
+    """Collect `src=` values for every <script> tag we encounter."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.src_values: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() != "script":
+            return
+        for k, v in attrs:
+            if k.lower() == "src" and v:
+                self.src_values.append(v)
+
+
+def _script_sources(html_path: Path) -> list[str]:
+    parser = _ScriptSrcExtractor()
+    parser.feed(html_path.read_text(encoding="utf-8"))
+    return parser.src_values
+
+
+# --- file layout --------------------------------------------------------------
+
+
+def test_web_dir_exists() -> None:
+    assert WEB.is_dir(), f"web/ directory missing at {WEB}"
+
+
+def test_hifi_v2_entry_exists() -> None:
+    assert (WEB / "hifi-v2.html").is_file()
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "hifi-v2.html",
+        "landing.html",
+        "wireframes.html",
+        "hifi.html",
+        "hifi-atoms.jsx",
+        "hifi-home.jsx",
+        "hifi-library.jsx",
+        "hifi-live.jsx",
+        "hifi-live-animated.jsx",
+        "hifi-results.jsx",
+        "hifi-v2-screens.jsx",
+        "hifi-auth-screens.jsx",
+        "hifi-avatars.jsx",
+        "design-canvas.jsx",
+        "wireframes-screens.jsx",
+        "README.md",
+        "CONTRIBUTING.md",
+    ],
+)
+def test_expected_file_present(name: str) -> None:
+    assert (WEB / name).is_file(), f"expected web/{name}"
+
+
+def test_docs_handoff_preserved() -> None:
+    assert (WEB / "docs" / "HANDOFF.md").is_file()
+    assert (WEB / "docs" / "design-chats").is_dir()
+    # 4 chat transcripts from design session
+    chats = sorted((WEB / "docs" / "design-chats").glob("chat*.md"))
+    assert len(chats) == 4, f"expected 4 chat transcripts, found {len(chats)}"
+
+
+# --- JSX import graph ---------------------------------------------------------
+
+
+def test_hifi_v2_script_imports_resolve() -> None:
+    """Every <script src="..."> relative to the HTML must exist on disk.
+
+    A broken import here would show up at runtime as a blank screen with
+    a 404 in the console. Static check catches the regression before the
+    user ever opens the page.
+    """
+    html_path = WEB / "hifi-v2.html"
+    for src in _script_sources(html_path):
+        if src.startswith(("http://", "https://")):
+            continue  # external CDN (React, Babel) — skip
+        target = (WEB / src).resolve()
+        assert target.is_file(), (
+            f"hifi-v2.html references '{src}' but {target} does not exist"
+        )
+
+
+def test_hifi_v2_imports_the_8_core_jsx_modules() -> None:
+    """Ensure the 8 JSX files the v2 prototype depends on are all imported.
+
+    If someone removes one and forgets to update the HTML, either the
+    script becomes a 404 (caught above) or the file is silently orphaned
+    (caught here — we assert the HTML still references it).
+    """
+    html_text = (WEB / "hifi-v2.html").read_text(encoding="utf-8")
+    required = {
+        "hifi-atoms.jsx",
+        "hifi-home.jsx",
+        "hifi-library.jsx",
+        "hifi-live.jsx",
+        "hifi-results.jsx",
+        "hifi-v2-screens.jsx",
+        "hifi-live-animated.jsx",
+        "hifi-auth-screens.jsx",
+    }
+    missing = {m for m in required if m not in html_text}
+    assert not missing, f"hifi-v2.html no longer imports: {sorted(missing)}"
+
+
+# --- README safeguards --------------------------------------------------------
+
+
+def test_web_readme_disambiguation_note_present() -> None:
+    """web/README.md is the design handoff's README, which carried an
+    ELv2 badge. We preserved it unedited but added a top-of-file note
+    clarifying that the actual repo license is MIT. That note must stay
+    — otherwise a future reader sees ELv2 at the top and assumes wrong."""
+    content = (WEB / "README.md").read_text(encoding="utf-8")
+    assert "Heads-up for readers" in content, (
+        "license disambiguation front-matter note missing from web/README.md"
+    )
+    assert "actual repo license is MIT" in content, (
+        "MIT license clarification stripped from web/README.md front matter"
+    )
+
+
+def test_top_level_readme_mentions_browser_prototype() -> None:
+    for readme in (REPO / "README.md", REPO / "README.ko.md"):
+        content = readme.read_text(encoding="utf-8")
+        assert "web/" in content and "Browser prototype" in content.replace(
+            "브라우저 프로토타입", "Browser prototype"
+        ), f"{readme.name} does not point at web/ for the browser prototype"
+
+
+# --- prototype-level invariants ----------------------------------------------
+
+
+def test_hifi_v2_has_nine_screen_definitions() -> None:
+    """The SCREENS array in hifi-v2.html drives the nav pills. If a
+    future edit drops a screen, the nav + happy-path logic silently
+    loses it. Lock the count."""
+    content = (WEB / "hifi-v2.html").read_text(encoding="utf-8")
+    # Count lines inside the SCREENS array that look like `{ id: '...', ...`
+    screens_match = re.search(
+        r"const SCREENS = \[(.*?)\];",
+        content,
+        re.DOTALL,
+    )
+    assert screens_match, "SCREENS array not found in hifi-v2.html"
+    screens_body = screens_match.group(1)
+    ids = re.findall(r"id:\s*'([^']+)'", screens_body)
+    # As of 2026-04-23 the Home→Library→Detail→Create→Setup→Live→Results→
+    # Settings→Pricing flow gives exactly 9 screens.
+    assert len(ids) == 9, f"expected 9 screens, found {len(ids)}: {ids}"
+
+
+def test_auth_screens_removed_from_flow_but_kept_in_source() -> None:
+    """OSS-first decision (see web/docs/design-chats/chat4.md): auth
+    screens are hidden from SCREENS but the source JSX is preserved so
+    a future managed/cloud build can re-enable them. Regression guard
+    for both halves of that decision."""
+    content = (WEB / "hifi-v2.html").read_text(encoding="utf-8")
+    screens_match = re.search(r"const SCREENS = \[(.*?)\];", content, re.DOTALL)
+    assert screens_match
+    screens_body = screens_match.group(1)
+    for auth_id in ("signin", "signup", "onboard", "upgrade"):
+        assert auth_id not in screens_body, (
+            f"auth screen '{auth_id}' leaked back into SCREENS"
+        )
+    assert (WEB / "hifi-auth-screens.jsx").is_file(), (
+        "hifi-auth-screens.jsx source removed — should stay as dormant scaffolding"
+    )

@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>Persona Studio — Wireframes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: 'Inter', -apple-system, system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+
+  /* Sketch primitives ---------------------------------------------------- */
+  .wf {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    color: #1a1a1a;
+    background: #fdfcfa;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  .wf .hand { font-family: 'Kalam', cursive; }
+  .wf .mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+
+  /* Basic atoms */
+  .wf .bx { border: 1.5px solid #1a1a1a; }
+  .wf .bx-soft { border: 1.5px solid #c7c4be; }
+  .wf .bx-dashed { border: 1.5px dashed #b8b5af; }
+  .wf .fill-dk { background: #1a1a1a; color: #fdfcfa; }
+  .wf .fill-soft { background: #eeeae3; }
+  .wf .fill-paper { background: #fdfcfa; }
+  .wf .accent { color: #c96442; }
+  .wf .bg-accent { background: #c96442; color: #fff; }
+  .wf .r-sm { border-radius: 6px; }
+  .wf .r-md { border-radius: 10px; }
+  .wf .r-lg { border-radius: 16px; }
+  .wf .r-full { border-radius: 999px; }
+
+  /* Placeholder slashes */
+  .wf .ph {
+    background: repeating-linear-gradient(135deg, transparent 0 9px, rgba(26,26,26,0.08) 9px 10px);
+  }
+  .wf .ph-heavy {
+    background: repeating-linear-gradient(135deg, transparent 0 7px, rgba(26,26,26,0.22) 7px 8px);
+  }
+  .wf .ph-accent {
+    background: repeating-linear-gradient(135deg, transparent 0 9px, rgba(201,100,66,0.25) 9px 10px);
+  }
+
+  /* Scribble text — indicates 'some copy lives here' */
+  .wf .scribble {
+    display: inline-block;
+    height: 0.55em;
+    background: #1a1a1a;
+    border-radius: 2px;
+    opacity: 0.12;
+    vertical-align: middle;
+  }
+
+  /* Title/section shell ------------------------------------------------- */
+  .chrome-bar {
+    height: 28px; display: flex; align-items: center; gap: 6px;
+    padding: 0 10px; background: #eeeae3; border-bottom: 1px solid #d8d3cb;
+  }
+  .chrome-dot { width: 9px; height: 9px; border-radius: 50%; background: #d3d0ca; }
+  .chrome-url {
+    flex: 1; height: 16px; background: #fdfcfa; border-radius: 4px;
+    font-family: ui-monospace, monospace; font-size: 9px; color: #888;
+    display: flex; align-items: center; padding: 0 8px;
+  }
+
+  /* App-level nav in wireframes */
+  .appnav {
+    height: 56px; padding: 0 32px; display: flex; align-items: center; gap: 28px;
+    border-bottom: 1px solid #e6e2db;
+  }
+  .appnav .brand { font-weight: 600; letter-spacing: -0.4px; font-size: 15px; }
+  .appnav .link { font-size: 13px; color: #4a463f; }
+  .appnav .link.active { color: #1a1a1a; font-weight: 500; }
+
+  /* Avatar chip */
+  .av { width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; color: #fff; }
+  .av.sm { width: 28px; height: 28px; font-size: 11px; }
+  .av.lg { width: 64px; height: 64px; font-size: 22px; }
+  .av.xl { width: 96px; height: 96px; font-size: 32px; }
+
+  /* Live waveform bars (simple) */
+  .wav { display: inline-flex; align-items: end; gap: 2px; height: 16px; }
+  .wav b { display: block; width: 2px; background: currentColor; border-radius: 1px; }
+
+  /* Tiny button */
+  .btn { display: inline-flex; align-items: center; justify-content: center; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 500; border: 1.5px solid #1a1a1a; background: #fdfcfa; }
+  .btn.primary { background: #1a1a1a; color: #fdfcfa; }
+  .btn.accent { background: #c96442; color: #fff; border-color: #c96442; }
+  .btn.ghost { border-color: transparent; background: transparent; }
+
+  /* Hand-drawn arrow annotation */
+  .note { position: absolute; font-family: 'Kalam', cursive; color: #c96442; font-size: 13px; line-height: 1.25; }
+  .note svg { display: block; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="wireframes-screens.jsx"></script>
+<script type="text/babel">
+  const { DesignCanvas, DCSection, DCArtboard, DCPostIt } = window;
+
+  // Personas used throughout
+  const PEOPLE = [
+    { id: 'pg', name: 'Paul Graham', role: 'Essayist · YC', hue: 28 },
+    { id: 'nv', name: 'Naval Ravikant', role: 'AngelList', hue: 195 },
+    { id: 'dhh', name: 'DHH', role: 'Rails · Basecamp', hue: 350 },
+    { id: 'jhb', name: 'JH Baek', role: 'Engineer', hue: 142 },
+    { id: 'dv', name: 'Devesh Upadhyay', role: 'Engineer', hue: 260 },
+    { id: 'wb', name: 'Wes Bailey', role: 'PM', hue: 90 },
+    { id: 'sp', name: 'sample_private', role: 'Fictional · KR', hue: 322 },
+  ];
+
+  const S = window.Screens;
+
+  function App() {
+    return (
+      <DesignCanvas>
+        {/* ─── Top-level intro / reading guide ─────────────────────────── */}
+        <DCSection id="intro" title="Persona Studio — Web UI Wireframes" subtitle="Low-fi sketches. Apple-ish restraint: roomy whitespace, simple type, b&w + one warm accent. Each row = one screen × 2–3 directions.">
+          <DCArtboard id="legend" label="Reading guide" width={720} height={340}>
+            <S.Legend />
+          </DCArtboard>
+        </DCSection>
+
+        {/* ─── 1. Home ──────────────────────────────────────────────────── */}
+        <DCSection id="home" title="1 · Home" subtitle="First screen when you open localhost. What does 'opening the app' feel like?">
+          <DCArtboard id="a" label="A · Quiet hero" width={1200} height={780}><S.HomeA/></DCArtboard>
+          <DCArtboard id="b" label="B · Room of faces" width={1200} height={780}><S.HomeB/></DCArtboard>
+          <DCArtboard id="c" label="C · Command bar" width={1200} height={780}><S.HomeC/></DCArtboard>
+        </DCSection>
+
+        {/* ─── 2. Avatar Library ────────────────────────────────────────── */}
+        <DCSection id="library" title="2 · Avatar Library" subtitle="Browse the cast. Filter local/global, private/public, tag.">
+          <DCArtboard id="a" label="A · Card grid" width={1200} height={780}><S.LibraryA/></DCArtboard>
+          <DCArtboard id="b" label="B · Dense table" width={1200} height={780}><S.LibraryB/></DCArtboard>
+          <DCArtboard id="c" label="C · Museum row" width={1200} height={780}><S.LibraryC/></DCArtboard>
+        </DCSection>
+
+        {/* ─── 3. Avatar Detail ─────────────────────────────────────────── */}
+        <DCSection id="detail" title="3 · Avatar Detail" subtitle="Profile · voice · positions · raw material · edit.">
+          <DCArtboard id="a" label="A · Two-column profile" width={1200} height={820}><S.DetailA/></DCArtboard>
+          <DCArtboard id="b" label="B · Long-read essay" width={1200} height={820}><S.DetailB/></DCArtboard>
+          <DCArtboard id="c" label="C · Editor-first" width={1200} height={820}><S.DetailC/></DCArtboard>
+        </DCSection>
+
+        {/* ─── 4. Create Avatar ─────────────────────────────────────────── */}
+        <DCSection id="create" title="4 · Create Avatar" subtitle="Upload files (Private) or name-only (Celebrity). Show ETL progress.">
+          <DCArtboard id="a" label="A · Wizard steps" width={1200} height={780}><S.CreateA/></DCArtboard>
+          <DCArtboard id="b" label="B · Single drop-zone" width={1200} height={780}><S.CreateB/></DCArtboard>
+          <DCArtboard id="c" label="C · Split mode pick" width={1200} height={780}><S.CreateC/></DCArtboard>
+        </DCSection>
+
+        {/* ─── 5. Simulation Setup ──────────────────────────────────────── */}
+        <DCSection id="setup" title="5 · Simulation Setup" subtitle="Topic, participants, meeting vs debate, Ralph loop.">
+          <DCArtboard id="a" label="A · Form" width={1200} height={820}><S.SetupA/></DCArtboard>
+          <DCArtboard id="b" label="B · Table seat layout" width={1200} height={820}><S.SetupB/></DCArtboard>
+          <DCArtboard id="c" label="C · Conversational" width={1200} height={820}><S.SetupC/></DCArtboard>
+        </DCSection>
+
+        {/* ─── 6. Live View ─────────────────────────────────────────────── */}
+        <DCSection id="live" title="6 · Live Simulation (tmux replacement)" subtitle="The core new experience. Multiple avatars speaking in parallel.">
+          <DCArtboard id="a" label="A · Panel grid (tmux-like)" width={1400} height={880}><S.LiveA/></DCArtboard>
+          <DCArtboard id="b" label="B · Chat river" width={1400} height={880}><S.LiveB/></DCArtboard>
+          <DCArtboard id="c" label="C · Round table (spotlight)" width={1400} height={880}><S.LiveC/></DCArtboard>
+          <DCArtboard id="d" label="D · Cards + transcript" width={1400} height={880}><S.LiveD/></DCArtboard>
+        </DCSection>
+
+        {/* ─── 7. Results ──────────────────────────────────────────────── */}
+        <DCSection id="results" title="7 · Simulation Results" subtitle="Transcript, Ralph scorecard, downloads (md/docx/pptx).">
+          <DCArtboard id="a" label="A · Scorecard hero" width={1200} height={820}><S.ResultsA/></DCArtboard>
+          <DCArtboard id="b" label="B · Transcript-first" width={1200} height={820}><S.ResultsB/></DCArtboard>
+          <DCArtboard id="c" label="C · Iterations timeline" width={1200} height={820}><S.ResultsC/></DCArtboard>
+        </DCSection>
+
+        {/* ─── 8. Settings ─────────────────────────────────────────────── */}
+        <DCSection id="settings" title="8 · Settings" subtitle="Model, paths, library location (local vs global), theme.">
+          <DCArtboard id="a" label="A · Sidebar nav" width={1200} height={720}><S.SettingsA/></DCArtboard>
+          <DCArtboard id="b" label="B · Single scroll" width={1200} height={720}><S.SettingsB/></DCArtboard>
+        </DCSection>
+
+      </DesignCanvas>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

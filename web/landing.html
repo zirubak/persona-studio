@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Persona Studio — open-source AI roundtables</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --paper: #fbfaf7;
+    --paper-soft: #f4f2ed;
+    --paper-deep: #eae6dd;
+    --ink: #1a1714;
+    --ink-soft: #3a342d;
+    --mute: #8a857b;
+    --hair: #e8e3d9;
+    --accent: #c96442;
+    --accent-soft: #f6e6dd;
+    --cool: #2f6b6b;
+    --cool-soft: #dbe9e7;
+    --green: #4a7c4e;
+    --f-sans: 'Inter', -apple-system, system-ui, sans-serif;
+    --f-display: 'Fraunces', 'New York', Georgia, serif;
+    --f-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--paper); color: var(--ink); font-family: var(--f-sans); -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  .mono { font-family: var(--f-mono); letter-spacing: 0.3px; }
+  .serif { font-family: var(--f-display); }
+  .eyebrow { font-family: var(--f-mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); }
+  .container { max-width: 1280px; margin: 0 auto; padding: 0 48px; }
+
+  /* Nav */
+  .nav { position: sticky; top: 0; z-index: 50; background: rgba(251,250,247,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--hair); }
+  .nav-inner { display: flex; align-items: center; gap: 36px; padding: 14px 48px; max-width: 1280px; margin: 0 auto; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; letter-spacing: -0.2px; }
+  .logo-mark { width: 22px; height: 22px; border-radius: 6px; background: conic-gradient(from 180deg, var(--accent), var(--cool), var(--accent)); }
+  .nav-links { display: flex; gap: 26px; font-size: 13px; color: var(--ink-soft); }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-right { margin-left: auto; display: flex; align-items: center; gap: 14px; font-size: 13px; }
+  .nav-star { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--hair); border-radius: 999px; background: #fff; font-size: 12px; }
+  .nav-star .count { color: var(--mute); font-family: var(--f-mono); font-size: 11px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 999px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid transparent; transition: all .15s; }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-primary:hover { background: #000; }
+  .btn-ghost { border-color: var(--ink); color: var(--ink); }
+
+  /* Hero */
+  .hero { padding: 80px 0 96px; position: relative; overflow: hidden; }
+  .hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 900px 500px at 80% 0%, var(--accent-soft) 0%, transparent 55%), radial-gradient(ellipse 700px 400px at 10% 100%, var(--cool-soft) 0%, transparent 55%); pointer-events: none; }
+  .hero-inner { position: relative; }
+  .hero-badges { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--hair); background: #fff; font-family: var(--f-mono); font-size: 11px; color: var(--ink-soft); letter-spacing: 0.5px; }
+  .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+  .hero h1 { font-family: var(--f-sans); font-weight: 500; font-size: clamp(48px, 7vw, 96px); letter-spacing: -3.5px; line-height: 1.0; margin: 0 0 24px; max-width: 900px; text-wrap: balance; }
+  .hero h1 em { font-family: var(--f-display); font-style: italic; font-weight: 300; letter-spacing: -2px; }
+  .hero-sub { font-size: 20px; color: var(--mute); line-height: 1.5; max-width: 580px; margin: 0 0 36px; letter-spacing: -0.2px; }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .hero-install { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--ink); color: #fff; border-radius: 10px; font-family: var(--f-mono); font-size: 13px; cursor: pointer; }
+  .hero-install .prompt { color: var(--accent); }
+  .hero-install .copy { font-size: 11px; color: rgba(255,255,255,0.5); margin-left: 6px; }
+
+  /* Floating cast */
+  .hero-cast { position: absolute; right: -40px; top: 40px; width: 440px; height: 480px; pointer-events: none; }
+  .hero-cast .card { position: absolute; width: 180px; background: #fff; border: 1px solid var(--hair); border-radius: 14px; padding: 14px; box-shadow: 0 20px 50px rgba(26,23,20,0.08); }
+  .hero-cast .card .ava { width: 44px; height: 44px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 500; font-size: 16px; }
+  .hero-cast .card .name { font-weight: 500; margin-top: 10px; font-size: 14px; }
+  .hero-cast .card .role { font-size: 11px; color: var(--mute); margin-top: 2px; }
+  .hero-cast .card .bubble { margin-top: 10px; padding: 8px 10px; background: var(--paper-soft); border-radius: 8px; font-size: 12px; color: var(--ink-soft); line-height: 1.4; font-family: var(--f-display); font-style: italic; }
+  .c1 { top: 20px;  right: 40px;  transform: rotate(2deg); }
+  .c2 { top: 180px; right: 220px; transform: rotate(-3deg); }
+  .c3 { top: 320px; right: 60px;  transform: rotate(1.5deg); }
+
+  /* Running strip */
+  .strip { padding: 18px 0; border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); font-family: var(--f-mono); font-size: 11px; color: var(--mute); letter-spacing: 1.5px; text-transform: uppercase; }
+  .strip-inner { display: flex; gap: 36px; overflow: hidden; }
+  .strip-inner > span { white-space: nowrap; }
+
+  /* Sections */
+  section { padding: 96px 0; }
+  .section-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 48px; gap: 40px; }
+  .section-head h2 { font-family: var(--f-sans); font-weight: 500; font-size: clamp(36px, 4.5vw, 56px); letter-spacing: -2px; line-height: 1.05; margin: 10px 0 0; max-width: 680px; text-wrap: balance; }
+  .section-head h2 em { font-family: var(--f-display); font-style: italic; font-weight: 300; }
+  .section-head .aside { max-width: 320px; color: var(--mute); font-size: 14px; line-height: 1.5; }
+
+  /* How it works — 3 steps */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
+  .step { background: #fff; border: 1px solid var(--hair); border-radius: 16px; padding: 28px; position: relative; }
+  .step .num { font-family: var(--f-mono); font-size: 11px; color: var(--accent); letter-spacing: 2px; }
+  .step h3 { font-family: var(--f-display); font-weight: 400; font-size: 26px; letter-spacing: -0.6px; margin: 14px 0 10px; }
+  .step p { color: var(--ink-soft); font-size: 14px; line-height: 1.55; margin: 0; }
+  .step .demo { margin-top: 20px; padding: 14px; background: var(--paper-soft); border-radius: 10px; font-family: var(--f-mono); font-size: 11px; color: var(--ink-soft); line-height: 1.6; min-height: 110px; }
+  .step .demo .k { color: var(--accent); }
+  .step .demo .m { color: var(--mute); }
+
+  /* Product shot — big canvas */
+  .shot { background: var(--ink); color: #fff; border-radius: 20px; overflow: hidden; position: relative; }
+  .shot-chrome { height: 32px; display: flex; align-items: center; gap: 6px; padding: 0 14px; background: #0f0d0b; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .shot-chrome .tl { width: 10px; height: 10px; border-radius: 50%; }
+  .shot-chrome .url { flex: 1; margin-left: 14px; height: 20px; background: rgba(255,255,255,0.06); border-radius: 6px; font-family: var(--f-mono); font-size: 10px; color: var(--mute); display: flex; align-items: center; padding: 0 10px; }
+  .shot-body { padding: 40px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 32px; min-height: 440px; }
+  .shot-stage { background: #231e19; border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+  .shot-msg { display: flex; gap: 12px; align-items: flex-start; }
+  .shot-msg .a { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; color: #fff; }
+  .shot-msg .t { flex: 1; }
+  .shot-msg .t .who { font-size: 11px; color: rgba(255,255,255,0.5); font-family: var(--f-mono); letter-spacing: 0.5px; }
+  .shot-msg .t .body { font-family: var(--f-display); font-style: italic; font-size: 16px; line-height: 1.4; margin-top: 4px; color: rgba(255,255,255,0.92); }
+  .shot-side { display: flex; flex-direction: column; gap: 16px; }
+  .shot-ring { width: 180px; height: 180px; margin: 0 auto; position: relative; }
+  .shot-ring svg { transform: rotate(-90deg); }
+  .shot-ring .score { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .shot-ring .score .n { font-family: var(--f-display); font-size: 52px; letter-spacing: -1px; }
+  .shot-ring .score .l { font-family: var(--f-mono); font-size: 10px; color: var(--mute); letter-spacing: 1.5px; margin-top: 4px; }
+
+  /* Features grid */
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; background: var(--hair); border-radius: 18px; overflow: hidden; border: 1px solid var(--hair); }
+  .feature { background: var(--paper); padding: 32px; min-height: 240px; }
+  .feature .ico { width: 38px; height: 38px; border-radius: 10px; background: var(--paper-soft); display: flex; align-items: center; justify-content: center; font-family: var(--f-display); font-size: 18px; color: var(--accent); }
+  .feature h4 { font-family: var(--f-sans); font-weight: 500; font-size: 18px; letter-spacing: -0.4px; margin: 18px 0 6px; }
+  .feature p { color: var(--ink-soft); font-size: 13.5px; line-height: 1.55; margin: 0; }
+
+  /* Open source section */
+  .oss { background: var(--paper-soft); border-radius: 20px; padding: 60px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 60px; align-items: center; }
+  .oss-left h2 { font-family: var(--f-sans); font-weight: 500; font-size: 48px; letter-spacing: -1.8px; line-height: 1.05; margin: 14px 0 20px; }
+  .oss-left h2 em { font-family: var(--f-display); font-style: italic; font-weight: 300; }
+  .oss-left p { color: var(--ink-soft); font-size: 15px; line-height: 1.55; margin: 0 0 24px; max-width: 480px; }
+  .oss-list { list-style: none; padding: 0; margin: 0; }
+  .oss-list li { padding: 10px 0; border-top: 1px solid var(--hair); display: flex; align-items: baseline; gap: 14px; font-size: 14px; }
+  .oss-list li:first-child { border-top: none; }
+  .oss-list .yes { color: var(--cool); font-family: var(--f-mono); font-size: 12px; letter-spacing: 1px; }
+  .oss-list .no { color: var(--accent); font-family: var(--f-mono); font-size: 12px; letter-spacing: 1px; }
+  .oss-right { background: var(--ink); color: #fff; border-radius: 14px; padding: 24px; font-family: var(--f-mono); font-size: 12.5px; line-height: 1.7; }
+  .oss-right .c { color: var(--mute); }
+  .oss-right .h { color: var(--accent); }
+  .oss-right .s { color: #8fb48f; }
+
+  /* Contributors */
+  .contrib { display: flex; align-items: center; gap: 16px; margin-top: 24px; }
+  .contrib .stack { display: flex; }
+  .contrib .stack > div { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--paper-soft); margin-left: -8px; }
+  .contrib .stack > div:first-child { margin-left: 0; }
+  .contrib .count { font-family: var(--f-mono); font-size: 12px; color: var(--mute); }
+
+  /* CTA */
+  .cta { text-align: center; padding: 120px 0; position: relative; }
+  .cta::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 700px 400px at 50% 50%, var(--accent-soft) 0%, transparent 60%); pointer-events: none; }
+  .cta-inner { position: relative; }
+  .cta h2 { font-family: var(--f-sans); font-weight: 500; font-size: 72px; letter-spacing: -3px; line-height: 1.0; margin: 14px 0 20px; }
+  .cta h2 em { font-family: var(--f-display); font-style: italic; font-weight: 300; }
+  .cta p { color: var(--mute); font-size: 18px; max-width: 560px; margin: 0 auto 32px; }
+  .cta-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* Footer */
+  footer { border-top: 1px solid var(--hair); padding: 48px 0 36px; font-size: 13px; color: var(--ink-soft); }
+  .foot-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+  .foot-col h5 { font-family: var(--f-mono); font-size: 10px; letter-spacing: 1.5px; color: var(--mute); text-transform: uppercase; margin: 0 0 14px; }
+  .foot-col a { display: block; padding: 5px 0; color: var(--ink-soft); }
+  .foot-col a:hover { color: var(--ink); }
+  .foot-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--hair); padding-top: 20px; font-family: var(--f-mono); font-size: 11px; color: var(--mute); letter-spacing: 0.5px; }
+
+  /* Hand-written note annotation (designer voice) */
+  .note { position: absolute; font-family: 'Kalam', cursive; color: var(--accent); font-size: 14px; line-height: 1.3; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="logo">
+      <div class="logo-mark"></div>
+      Persona Studio
+    </div>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#oss">Open source</a>
+      <a href="#">Docs</a>
+      <a href="#">Blog</a>
+    </div>
+    <div class="nav-right">
+      <a class="nav-star">
+        <span>★</span>
+        <span>Star</span>
+        <span class="count">2.4k</span>
+      </a>
+      <a class="btn btn-primary">Try it live →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container hero-inner">
+    <div class="hero-badges">
+      <span class="badge"><span class="dot"></span> v0.5.3 · alpha</span>
+      <span class="badge">Elastic License 2.0</span>
+      <span class="badge">Self-host in 60 seconds</span>
+    </div>
+    <h1>Rehearse tomorrow's<br/>meeting <em>today.</em></h1>
+    <p class="hero-sub">Build AI avatars of the people who'll be in the room — essayists, colleagues, customers, your own past self — then listen in as they argue it out.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" style="padding: 12px 22px; font-size: 14px;">Try the hosted demo →</a>
+      <div class="hero-install" onclick="navigator.clipboard && navigator.clipboard.writeText('pnpm i persona-studio')">
+        <span class="prompt">$</span>
+        <span>pnpm i persona-studio</span>
+        <span class="copy">⌘C</span>
+      </div>
+    </div>
+
+    <!-- Floating cast cards -->
+    <div class="hero-cast">
+      <div class="card c1">
+        <div class="ava" style="background: oklch(0.70 0.11 28);">PG</div>
+        <div class="name">Paul Graham</div>
+        <div class="role">Essayist · Y Combinator</div>
+        <div class="bubble">"Do things that don't scale."</div>
+      </div>
+      <div class="card c2">
+        <div class="ava" style="background: oklch(0.70 0.11 195);">NR</div>
+        <div class="name">Naval Ravikant</div>
+        <div class="role">AngelList</div>
+        <div class="bubble">"Seek wealth, not money."</div>
+      </div>
+      <div class="card c3">
+        <div class="ava" style="background: oklch(0.70 0.11 350);">DH</div>
+        <div class="name">DHH</div>
+        <div class="role">Basecamp · Rails</div>
+        <div class="bubble">"Small teams, small problems."</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Running strip -->
+<div class="strip">
+  <div class="container strip-inner">
+    <span>★ Self-hostable</span>
+    <span>★ No vendor lock-in</span>
+    <span>★ Bring your own model</span>
+    <span>★ JSON-first data</span>
+    <span>★ Built in the open</span>
+    <span>★ 43 contributors</span>
+    <span>★ MIT-compatible core</span>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">How it works</div>
+        <h2>Three steps, <em>one afternoon.</em></h2>
+      </div>
+      <div class="aside">From raw source material to a working roundtable in about twenty minutes — no fine-tuning, no training runs.</div>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="num">01 · INGEST</div>
+        <h3>Feed it a voice.</h3>
+        <p>Drop in essays, transcripts, a podcast feed, your Notion export, or a single URL. It builds a persona grounded in the actual writing — not a caricature.</p>
+        <div class="demo">
+          <span class="m">$</span> <span class="k">persona ingest</span> paulgraham.com/*.html<br/>
+          <span class="m">→ parsed 184 essays · 84k tokens</span><br/>
+          <span class="m">→ avatar "paul_graham" ready.</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">02 · ROUND</div>
+        <h3>Pick a table.</h3>
+        <p>Invite two to eight personas. Hand them a question, a pitch, a pull request. They'll disagree in character. You watch.</p>
+        <div class="demo">
+          <span class="k">› simulate</span> <span class="m">meeting with</span><br/>
+          <span class="k">@paul_graham</span> <span class="k">@naval</span> <span class="k">@dhh</span><br/>
+          <span class="m">about</span> "should we raise a seed?"
+        </div>
+      </div>
+      <div class="step">
+        <div class="num">03 · GRADE</div>
+        <h3>Score the result.</h3>
+        <p>Define what "good" looks like — clarity, rigor, kindness, whatever — and get a Ralph score against that rubric. Iterate until it lands.</p>
+        <div class="demo">
+          <span class="m">Ralph rubric · 4 axes</span><br/>
+          <span class="k">clarity</span>  ████████░ 8.2<br/>
+          <span class="k">rigor</span>    ██████░░░ 6.4<br/>
+          <span class="k">kindness</span> ████████░ 8.0
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCT SHOT -->
+<section style="padding-top: 0;">
+  <div class="container">
+    <div class="shot">
+      <div class="shot-chrome">
+        <div class="tl" style="background: #ed6a5e;"></div>
+        <div class="tl" style="background: #f4bf4f;"></div>
+        <div class="tl" style="background: #61c554;"></div>
+        <div class="url">localhost:7777 · live simulation</div>
+      </div>
+      <div class="shot-body">
+        <div class="shot-stage">
+          <div style="font-family: var(--f-mono); font-size: 10px; color: var(--mute); letter-spacing: 1.5px;">ROUND 2 · "SHOULD WE SHIP THE BETA?"</div>
+          <div class="shot-msg" style="margin-top: 8px;">
+            <div class="a" style="background: oklch(0.70 0.11 28);">PG</div>
+            <div class="t">
+              <div class="who">paul_graham · 0:14</div>
+              <div class="body">"Ship it broken. You learn more from one confused user than ten surveys."</div>
+            </div>
+          </div>
+          <div class="shot-msg">
+            <div class="a" style="background: oklch(0.70 0.11 350);">DH</div>
+            <div class="t">
+              <div class="who">dhh · 0:22</div>
+              <div class="body">"That's fine advice for a toy. Not for software people pay for."</div>
+            </div>
+          </div>
+          <div class="shot-msg">
+            <div class="a" style="background: oklch(0.70 0.11 195);">NR</div>
+            <div class="t">
+              <div class="who">naval · 0:29 · <span style="color: var(--accent);">● speaking</span></div>
+              <div class="body">"Both true. The question is which failure mode is cheaper to recover from."</div>
+            </div>
+          </div>
+        </div>
+        <div class="shot-side">
+          <div style="font-family: var(--f-mono); font-size: 10px; color: var(--mute); letter-spacing: 1.5px;">RALPH SCORE · TARGET 7.0</div>
+          <div class="shot-ring">
+            <svg width="180" height="180" viewBox="0 0 180 180">
+              <circle cx="90" cy="90" r="80" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="8"/>
+              <circle cx="90" cy="90" r="80" fill="none" stroke="#8fb48f" stroke-width="8" stroke-linecap="round"
+                stroke-dasharray="410 502"/>
+            </svg>
+            <div class="score">
+              <div class="n">8.1</div>
+              <div class="l">PASSED</div>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-family: var(--f-mono); font-size: 11px;">
+            <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+              <div style="color: var(--mute); font-size: 9px; letter-spacing: 1px;">LATENCY</div>
+              <div style="margin-top: 4px; font-size: 14px;">480ms</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;">
+              <div style="color: var(--mute); font-size: 9px; letter-spacing: 1px;">TOKENS</div>
+              <div style="margin-top: 4px; font-size: 14px;">2,140</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Features</div>
+        <h2>Built for the way you<br/>actually <em>think.</em></h2>
+      </div>
+    </div>
+    <div class="features">
+      <div class="feature">
+        <div class="ico">✻</div>
+        <h4>Bring your own model</h4>
+        <p>Anthropic, OpenAI, Ollama, llama.cpp. Swap providers per-persona. Run entirely local if you need to.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">◷</div>
+        <h4>Live round-table</h4>
+        <p>Personas interrupt, agree, derail. Pace and voice are preserved. You can jump in at any turn.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">◉</div>
+        <h4>Ralph scoring</h4>
+        <p>Define a rubric, watch responses graded against it in real time. Iterate until the answer clears your bar.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">⟡</div>
+        <h4>Private corpora</h4>
+        <p>Your own notes, journals, Slack exports — build personas from anything. Nothing leaves your machine.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">⌘</div>
+        <h4>Keyboard first</h4>
+        <p>⌘K for everything. Every action is scriptable from the CLI. Designed for people who live in terminals.</p>
+      </div>
+      <div class="feature">
+        <div class="ico">↯</div>
+        <h4>JSON-first</h4>
+        <p>Personas, simulations, results — all plain JSON. Git-friendly, diff-able, grep-able, yours.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- OPEN SOURCE -->
+<section id="oss">
+  <div class="container">
+    <div class="oss">
+      <div class="oss-left">
+        <div class="eyebrow">Open source</div>
+        <h2>Source-available,<br/><em>sustainably.</em></h2>
+        <p>We're licensed under Elastic License 2.0 — permissive for almost every real-world use, with one narrow exception to keep the project alive.</p>
+        <ul class="oss-list">
+          <li><span class="yes">✓ YES</span>Use it at work, on your own product, in research.</li>
+          <li><span class="yes">✓ YES</span>Fork it, modify it, self-host it, embed it.</li>
+          <li><span class="yes">✓ YES</span>Contribute back — PRs, issues, plugins, docs.</li>
+          <li><span class="no">✗ NO</span>Resell it as a hosted service that competes with us.</li>
+        </ul>
+        <div class="contrib">
+          <div class="stack">
+            <div style="background: oklch(0.70 0.11 28);"></div>
+            <div style="background: oklch(0.70 0.11 195);"></div>
+            <div style="background: oklch(0.70 0.11 350);"></div>
+            <div style="background: oklch(0.70 0.11 142);"></div>
+            <div style="background: oklch(0.70 0.11 260);"></div>
+            <div style="background: oklch(0.70 0.11 90);"></div>
+            <div style="background: oklch(0.70 0.11 322);"></div>
+          </div>
+          <span class="count">43 contributors · 2,430 stars · 184 PRs merged</span>
+        </div>
+      </div>
+      <div class="oss-right">
+        <span class="c"># clone and run</span><br/>
+        <span class="h">$</span> git clone https://github.com/persona-studio/persona-studio<br/>
+        <span class="h">$</span> cd persona-studio<br/>
+        <span class="h">$</span> pnpm install && pnpm dev<br/><br/>
+        <span class="c"># or one-line self-host</span><br/>
+        <span class="h">$</span> curl -fsSL get.persona-studio.dev | sh<br/><br/>
+        <span class="s">✓</span> <span class="c">server running at</span> localhost:7777<br/>
+        <span class="s">✓</span> <span class="c">no account needed</span><br/>
+        <span class="s">✓</span> <span class="c">data lives in ./data/</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <div class="container cta-inner">
+    <div class="eyebrow">Ready?</div>
+    <h2>The room is<br/><em>waiting.</em></h2>
+    <p>Five minutes to your first simulation. No credit card, no "book a demo," no sales call.</p>
+    <div class="cta-actions">
+      <a class="btn btn-primary" style="padding: 14px 24px; font-size: 15px;">Try the hosted demo →</a>
+      <a class="btn btn-ghost" style="padding: 14px 24px; font-size: 15px;">★ View on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="foot-grid">
+      <div class="foot-col">
+        <div class="logo" style="margin-bottom: 10px;">
+          <div class="logo-mark"></div>
+          Persona Studio
+        </div>
+        <div style="color: var(--mute); font-size: 13px; line-height: 1.5; max-width: 320px;">
+          Open-source AI roundtables. Built in the open, licensed under ELv2.
+        </div>
+      </div>
+      <div class="foot-col">
+        <h5>Product</h5>
+        <a href="#">Features</a>
+        <a href="#">Changelog</a>
+        <a href="#">Roadmap</a>
+        <a href="#">Self-host</a>
+      </div>
+      <div class="foot-col">
+        <h5>Community</h5>
+        <a href="#">GitHub ↗</a>
+        <a href="#">Discord ↗</a>
+        <a href="#">Twitter ↗</a>
+        <a href="#">Office hours</a>
+      </div>
+      <div class="foot-col">
+        <h5>Resources</h5>
+        <a href="#">Docs</a>
+        <a href="#">API reference</a>
+        <a href="#">Blog</a>
+        <a href="#">License (ELv2)</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <div>© 2026 · ELASTIC LICENSE 2.0 · BUILT BY HUMANS + A FEW ROBOTS</div>
+      <div>v0.5.3-alpha · commit 4a2f91c</div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

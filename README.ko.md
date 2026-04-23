@@ -316,6 +316,37 @@ transcript 에 인라인으로 붙는 태그들:
 
 <br/>
 
+## 브라우저 프로토타입 (실험적)
+
+지금까지 Persona Studio 는 CLI 플러그인 전용이었지만, 제안된 웹 UI 의 **클릭 가능 프로토타입** 이 [`web/`](web/) 에 추가됐습니다 — 9개 화면 (Home, Library, Avatar 상세, Create, Setup, Live 시뮬레이션, Results, Settings, Cloud · soon), 런타임에 JSX 파일을 로드하는 단일 HTML 페이지. **빌드 단계 없음**.
+
+```bash
+cd web/
+# 옵션 1 — static server
+python3 -m http.server 7777
+# 옵션 2 — npx serve
+npx --yes serve -l 7777 .
+# 브라우저에서 http://localhost:7777/hifi-v2.html
+```
+
+지금 할 수 있는 것:
+
+- **완전한 클릭 플로우** — 네비 pill 또는 ← / → 화살표로 9개 화면 이동; 각 화면의 hotspot 을 눌러 happy path (Home → Setup → Live → Results) 전진.
+- **Mock data 만** — 아바타·시뮬레이션·transcript 는 디자인 placeholder. 이 프로토타입은 아직 `src/persona_studio/` 의 Python grounding / simulation 파이프라인을 호출하지 않습니다.
+- **Guest mode 표시** — chrome 에 "GUEST MODE · LOCAL ONLY" 표시로 미래 동작 시사; 현재는 nav 선택만 `localStorage` 에 저장.
+
+아직 안 되는 것:
+
+- 실제 Ralph 시뮬레이션 없음 (Live view 는 scripted animated turn 이지 진짜 LLM 출력 아님).
+- `data/people/` · `simulations/` 에 기록 없음.
+- auth / account / Cloud 기능 없음 — 해당 화면은 의도적으로 숨김 + "Cloud · soon" 라벨.
+
+프로토타입을 실제 백엔드에 연결하고 싶으시면 다음 단계는 Streamlit 또는 FastAPI+React 프론트엔드로 `persona_studio.grounding.audit`, `verify_claims`, 그리고 live 시뮬레이션 turn 을 스트리밍할 새 SSE/WebSocket 엔드포인트를 호출하는 것. 로드맵 참조.
+
+> `web/` 번들은 [Claude Design](https://claude.ai/design) 핸드오프. 원본 design README + chat transcript 는 작성자 의도 보존을 위해 `web/docs/` 에 보존. 라이선스 주: design 은 ELv2 를 권장했지만 이 레포는 MIT 유지 — 레포 루트 `LICENSE` 참조.
+
+<br/>
+
 ## 뭐가 만들어지나?
 
 모든 회의는 `simulations/<주제>/`에 세 파일을 남깁니다:
