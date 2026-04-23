@@ -45,6 +45,9 @@ persona-studio = "persona_studio.cli:app"
 testpaths = ["tests"]
 addopts = "-q"
 pythonpath = ["src"]
+markers = [
+    "slow: subprocess / integration tests — seconds, not ms. Still run by default; tag exists so `pytest -m 'not slow'` can skip them in tight dev loops.",
+]
 
 [tool.coverage.run]
 source = ["src/persona_studio"]
