@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>Persona Studio — Hi-Fi v2 · Prototype</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=Kalam:wght@300;400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  html, body { margin: 0; padding: 0; background: #fbfaf7; font-family: 'Inter', -apple-system, system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  * { box-sizing: border-box; }
+  @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+  @keyframes ring { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(1.3); opacity: 0; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .screen { animation: fadeUp .35s cubic-bezier(.2,.7,.3,1); }
+  .navpill { transition: all .15s; }
+  .navpill:hover { transform: translateY(-1px); }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="hifi-atoms.jsx"></script>
+<script type="text/babel" src="hifi-home.jsx"></script>
+<script type="text/babel" src="hifi-library.jsx"></script>
+<script type="text/babel" src="hifi-live.jsx"></script>
+<script type="text/babel" src="hifi-results.jsx"></script>
+<script type="text/babel" src="hifi-v2-screens.jsx"></script>
+<script type="text/babel" src="hifi-live-animated.jsx"></script>
+<script type="text/babel" src="hifi-auth-screens.jsx"></script>
+
+<script type="text/babel">
+  const { useState, useEffect } = React;
+  const T = window.HF.tokens;
+
+  // Wrap the imported screens so clicks on their AppNav/CTAs can navigate.
+  // Since the variation files don't accept callbacks, we overlay click
+  // targets on known zones via a transparent overlay router.
+  // OSS-first prototype: auth is deferred. Sign-in/up/onboard screens are
+  // kept in the source (hifi-auth-screens.jsx) for later but removed from the
+  // main flow. Pricing/Upgrade are relabelled as "Cloud · Coming soon" so
+  // there's a seat for a future managed offering.
+  const SCREENS = [
+    { id: 'home',     label: 'Home',              render: (nav) => <window.HF_Home.HomeA/> },
+    { id: 'library',  label: 'Library',           render: (nav) => <window.HF_Library.LibraryA/> },
+    { id: 'detail',   label: 'Avatar',            render: (nav) => <window.HF_V2.DetailScreen onNav={nav}/> },
+    { id: 'create',   label: 'New avatar',        render: (nav) => <window.HF_V2.CreateScreen onNav={nav}/> },
+    { id: 'setup',    label: 'Setup',             render: (nav) => <window.HF_V2.SetupScreen onNav={nav}/> },
+    { id: 'live',     label: 'Live',              render: (nav) => <window.HF_LiveAnimated.LiveBAnimated/> },
+    { id: 'results',  label: 'Results',           render: (nav) => <window.HF_Results.ResultsA/> },
+    { id: 'settings', label: 'Settings',          render: (nav) => <window.HF_Auth.SettingsScreen onNav={nav}/> },
+    { id: 'pricing',  label: 'Cloud · soon',      render: (nav) => <window.HF_Auth.PricingScreen onNav={nav}/> },
+  ];
+
+  function App(){
+    const [cur, setCur] = useState(() => {
+      try {
+        const saved = localStorage.getItem('ps_screen');
+        // Auth screens are no longer in the flow — fall back to home.
+        if (!saved || ['signin','signup','onboard','upgrade'].includes(saved)) return 'home';
+        return saved;
+      } catch { return 'home'; }
+    });
+    const nav = (id) => { setCur(id); try { localStorage.setItem('ps_screen', id); } catch {} };
+
+    useEffect(() => {
+      const onKey = (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        const i = SCREENS.findIndex(s => s.id === cur);
+        if (e.key === 'ArrowRight') nav(SCREENS[Math.min(i+1, SCREENS.length-1)].id);
+        if (e.key === 'ArrowLeft')  nav(SCREENS[Math.max(i-1, 0)].id);
+      };
+      window.addEventListener('keydown', onKey);
+      return () => window.removeEventListener('keydown', onKey);
+    }, [cur]);
+
+    const screen = SCREENS.find(s => s.id === cur) || SCREENS[0];
+
+    // Primary-CTA hotspot table: in each screen, where's the "next" click?
+    const HOTSPOTS = {
+      home:   [
+        { top: 380, left: 120, w: 240, h: 60, to: 'setup',  title: 'Start a simulation →' },
+        { top: 380, left: 380, w: 200, h: 60, to: 'create', title: 'Build an avatar' },
+      ],
+      library: [
+        { top: 0, left: 0, w: '100%', h: 56, to: '__nav', title: 'Top nav' }, // handled by nav bar below
+        { top: 160, right: 80, w: 140, h: 40, to: 'create', title: '+ New avatar' },
+        { top: 240, left: 72, w: 240, h: 340, to: 'detail', title: 'Open Paul Graham' },
+      ],
+      detail:  [
+        { top: 500, left: 72, w: 300, h: 50, to: 'setup', title: 'Start simulation →' },
+      ],
+      create:  [
+        { top: 540, left: 120, w: 380, h: 60, to: 'library', title: 'Upload files →' },
+      ],
+      setup:   [],  // handled by onNav prop already
+      live:    [
+        { bottom: 24, right: 32, w: 90, h: 40, to: 'results', title: 'End → results' },
+      ],
+      results: [
+        { top: 0, left: 0, w: 120, h: 56, to: 'home', title: '← Home' },
+      ],
+      settings: [],
+    };
+
+    return (
+      <div style={{ minHeight: '100vh', background: '#f0eee9', padding: '20px 20px 100px' }}>
+        {/* Prototype chrome */}
+        <div style={{ maxWidth: 1400, margin: '0 auto 20px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+          <div style={{ fontFamily: T.fDisplay, fontSize: 22, letterSpacing: -0.5, fontWeight: 500 }}>Persona Studio</div>
+          <div style={{ fontFamily: T.fMono, fontSize: 10, color: T.accent, letterSpacing: 2, padding: '3px 8px', background: T.accentSoft, borderRadius: 4 }}>HI-FI v2 · CLICKABLE</div>
+          <div style={{ fontFamily: T.fMono, fontSize: 10, color: T.cool, letterSpacing: 2, padding: '3px 8px', background: T.coolSoft, borderRadius: 4 }}>OSS · ELv2</div>
+          <div style={{ fontFamily: T.fMono, fontSize: 10, color: T.mute, letterSpacing: 1.5, padding: '3px 10px', background: '#fff', border: `1px solid ${T.hair}`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: T.green, display: 'inline-block' }}/>
+            GUEST MODE · LOCAL ONLY
+          </div>
+          <div style={{ flex: 1 }}/>
+          <div style={{ fontFamily: T.fMono, fontSize: 10, color: T.ink, letterSpacing: 1, padding: '5px 12px', background: '#fff', border: `1px solid ${T.hair}`, borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+            <span>★</span> Star on GitHub <span style={{ color: T.mute }}>· 2.4k</span>
+          </div>
+          <div style={{ fontFamily: T.fMono, fontSize: 10, color: T.mute, letterSpacing: 1 }}>← →</div>
+        </div>
+
+        {/* Nav pills */}
+        <div style={{ maxWidth: 1400, margin: '0 auto 20px', display: 'flex', gap: 6, flexWrap: 'wrap', padding: 8, background: '#fff', borderRadius: 999, border: `1px solid ${T.hair}`, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          {SCREENS.map((s, i) => (
+            <div key={s.id} className="navpill" onClick={() => nav(s.id)} style={{
+              padding: '8px 16px', borderRadius: 999, fontSize: 13, cursor: 'pointer',
+              background: cur === s.id ? T.ink : 'transparent',
+              color: cur === s.id ? '#fff' : T.inkSoft,
+              fontWeight: cur === s.id ? 500 : 400,
+              fontFamily: T.fSans, letterSpacing: -0.1,
+              display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <span style={{ fontFamily: T.fMono, fontSize: 10, opacity: 0.5 }}>{String(i).padStart(2,'0')}</span>
+              {s.label}
+            </div>
+          ))}
+          <div style={{ flex: 1 }}/>
+          <div style={{ padding: '8px 14px', fontFamily: T.fMono, fontSize: 11, color: T.mute }}>{cur}</div>
+        </div>
+
+        {/* Frame */}
+        <div style={{ maxWidth: 1400, margin: '0 auto', background: '#fff', borderRadius: 18, overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04)', height: 860, position: 'relative' }}>
+          <div className="screen" key={cur} style={{ height: '100%', position: 'relative' }}>
+            {screen.render(nav)}
+            {/* Hotspot overlays */}
+            {(HOTSPOTS[cur] || []).filter(h => h.to !== '__nav').map((h, i) => (
+              <div key={i} onClick={() => nav(h.to)} title={h.title} style={{
+                position: 'absolute', top: h.top, left: h.left, right: h.right, bottom: h.bottom,
+                width: h.w, height: h.h, cursor: 'pointer', zIndex: 20,
+                borderRadius: 12,
+              }}/>
+            ))}
+          </div>
+        </div>
+
+        {/* Flow map footer */}
+        <div style={{ maxWidth: 1400, margin: '24px auto 0', padding: 20, background: '#fff', borderRadius: 14, border: `1px solid ${T.hair}` }}>
+          <div style={{ fontFamily: T.fMono, fontSize: 10, color: T.accent, letterSpacing: 2, marginBottom: 10 }}>HAPPY PATH</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontFamily: T.fSans, fontSize: 13 }}>
+            {['home','setup','live','results'].map((s, i, a) => (
+              <React.Fragment key={s}>
+                <div onClick={() => nav(s)} style={{
+                  padding: '8px 14px', borderRadius: 999, cursor: 'pointer',
+                  background: cur === s ? T.accent : T.paperSoft,
+                  color: cur === s ? '#fff' : T.ink,
+                  fontWeight: cur === s ? 500 : 400,
+                }}>{SCREENS.find(x => x.id === s).label}</div>
+                {i < a.length - 1 && <div style={{ color: T.mute }}>→</div>}
+              </React.Fragment>
+            ))}
+            <div style={{ color: T.mute, marginLeft: 16, fontSize: 12 }}>· use ← → to navigate any screen</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

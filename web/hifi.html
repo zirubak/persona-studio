@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>Persona Studio — Hi-Fi</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=Kalam:wght@300;400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: 'Inter', -apple-system, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  * { box-sizing: border-box; }
+  @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+  @keyframes ring { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(1.3); opacity: 0; } }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="hifi-atoms.jsx"></script>
+<script type="text/babel" src="hifi-avatars.jsx"></script>
+<script type="text/babel" src="hifi-home.jsx"></script>
+<script type="text/babel" src="hifi-library.jsx"></script>
+<script type="text/babel" src="hifi-live.jsx"></script>
+<script type="text/babel" src="hifi-results.jsx"></script>
+
+<script type="text/babel">
+  const { DesignCanvas, DCSection, DCArtboard } = window;
+  const { HomeA, HomeB, HomeC } = window.HF_Home;
+  const { LibraryA, LibraryB } = window.HF_Library;
+  const { LiveA, LiveB, LiveC } = window.HF_Live;
+  const { ResultsA, ResultsB, ResultsC } = window.HF_Results;
+  const { AvatarExplorations } = window.HF_Avatars;
+
+  function Intro() {
+    const T = window.HF.tokens;
+    return (
+      <div style={{ padding: 40, background: T.paper, height: '100%', fontFamily: T.fSans, color: T.ink, overflow: 'hidden' }}>
+        <div style={{ fontFamily: T.fMono, fontSize: 11, color: T.accent, letterSpacing: 2, textTransform: 'uppercase' }}>HI-FI · V1</div>
+        <div style={{ fontFamily: T.fDisplay, fontWeight: 400, fontSize: 44, letterSpacing: -1.4, lineHeight: 1.05, marginTop: 14, marginBottom: 18 }}>
+          From wireframes to <span style={{ fontStyle: 'italic', fontWeight: 300 }}>skin.</span>
+        </div>
+        <div style={{ fontSize: 14, color: T.mute, lineHeight: 1.55, maxWidth: 520, marginBottom: 28 }}>
+          Apple-ish restraint. Warm paper, one terracotta accent, a cool teal for Ralph "passed" moments. Display type in Fraunces italic for soft punctuation; Inter for the rest; Kalam kept for margin notes.
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+          {[
+            { c: T.paper, l: 'paper' },
+            { c: T.ink, l: 'ink' },
+            { c: T.accent, l: 'accent' },
+            { c: T.cool, l: 'ralph ✓' },
+          ].map(s => (
+            <div key={s.l}>
+              <div style={{ height: 56, borderRadius: 10, background: s.c, border: `1px solid ${T.hair}` }}/>
+              <div style={{ fontFamily: T.fMono, fontSize: 10, color: T.mute, marginTop: 6 }}>{s.l}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 24, fontFamily: T.fHand, fontSize: 14, color: T.accent, transform: 'rotate(-1deg)', display: 'inline-block' }}>
+          drag cards · click labels · focus any artboard
+        </div>
+      </div>
+    );
+  }
+
+  function App() {
+    return (
+      <DesignCanvas>
+        <DCSection id="system" title="0 · System" subtitle="Palette, type, avatar treatments — the language the rest is built from.">
+          <DCArtboard id="intro" label="Language" width={640} height={420}><Intro/></DCArtboard>
+          <DCArtboard id="avatars" label="Avatar treatment · 3 directions" width={1200} height={660}><AvatarExplorations/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="home" title="1 · Home" subtitle="First screen. Apple-ish 3 ways.">
+          <DCArtboard id="a" label="A · Quiet hero (apple.com)" width={1200} height={780}><HomeA/></DCArtboard>
+          <DCArtboard id="b" label="B · Room of faces (warm)" width={1200} height={780}><HomeB/></DCArtboard>
+          <DCArtboard id="c" label="C · Dark command (⌘K)" width={1200} height={780}><HomeC/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="library" title="2 · Library" subtitle="The cast as product surface.">
+          <DCArtboard id="a" label="A · Editorial portrait grid" width={1200} height={780}><LibraryA/></DCArtboard>
+          <DCArtboard id="b" label="B · Museum row" width={1200} height={780}><LibraryB/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="live" title="3 · Live Simulation" subtitle="The core new experience — avatars speaking in parallel.">
+          <DCArtboard id="a" label="A · Panel grid (dark · tmux-native)" width={1400} height={880}><LiveA/></DCArtboard>
+          <DCArtboard id="b" label="B · Round table (spatial)" width={1400} height={880}><LiveB/></DCArtboard>
+          <DCArtboard id="c" label="C · Transcript river (editorial)" width={1400} height={880}><LiveC/></DCArtboard>
+        </DCSection>
+
+        <DCSection id="results" title="4 · Results" subtitle="Ralph score tells the story of the climb.">
+          <DCArtboard id="a" label="A · Scorecard hero" width={1200} height={900}><ResultsA/></DCArtboard>
+          <DCArtboard id="b" label="B · Transcript-first" width={1200} height={900}><ResultsB/></DCArtboard>
+          <DCArtboard id="c" label="C · Iterations timeline" width={1200} height={820}><ResultsC/></DCArtboard>
+        </DCSection>
+      </DesignCanvas>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

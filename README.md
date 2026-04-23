@@ -316,6 +316,37 @@ Disable the whole layer for pure-brainstorm sessions via the `/persona-studio:st
 
 <br/>
 
+## Browser prototype (experimental)
+
+Persona Studio has been a CLI plugin from day one, but a **clickable browser prototype** of the proposed web UI now lives in [`web/`](web/) — 9 screens (Home, Library, Avatar detail, Create, Setup, Live simulation, Results, Settings, Cloud · soon), built as a single HTML page that loads JSX files at runtime. **No build step required**.
+
+```bash
+cd web/
+# Option 1 — any static server
+python3 -m http.server 7777
+# Option 2 — npx serve
+npx --yes serve -l 7777 .
+# then open http://localhost:7777/hifi-v2.html
+```
+
+What it does today:
+
+- **Fully clickable flow** — use the nav pills or ← / → arrows to walk through the 9 screens; click hotspots on each screen to move forward on the "happy path" (Home → Setup → Live → Results).
+- **Mock data only** — avatars, simulations, and transcripts shown are design placeholders. This prototype does not yet call the Python grounding or simulation pipeline under `src/persona_studio/`.
+- **Guest mode indicator** — the chrome shows "GUEST MODE · LOCAL ONLY" to signal the future behavior; today there is no persistence beyond the nav selection in `localStorage`.
+
+What it does NOT do yet:
+
+- No real Ralph simulation (the Live view is animated with scripted turns, not actual LLM output).
+- No write to `data/people/` or `simulations/`.
+- No auth / account / Cloud features — those screens are intentionally hidden and labelled "Cloud · soon".
+
+Want to help wire the prototype to the real backend? The next phase would be a Streamlit or FastAPI+React frontend that calls `persona_studio.grounding.audit`, `verify_claims`, and a new SSE/WebSocket endpoint for streaming live simulation turns. See the ROADMAP.
+
+> The `web/` bundle is a [Claude Design](https://claude.ai/design) handoff. Original design README + chat transcripts are preserved under `web/docs/` for authorial intent. License note: the design recommended ELv2, but this repo stays MIT — see `LICENSE` at the repo root.
+
+<br/>
+
 ## What gets generated?
 
 Every meeting produces three files in `simulations/<your-topic>/`:
