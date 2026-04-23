@@ -115,9 +115,14 @@ def setup_plan(
     ))
     steps.append(Step(
         name="pip_install",
-        description="Install persona-studio and dev extras",
+        description="Install persona-studio with dev + web extras",
         action=lambda: _run(
-            [str(py), "-m", "pip", "install", "--quiet", "-e", ".[dev]"],
+            # web extras (fastapi, uvicorn, pyyaml, httpx) cover the Phase 1
+            # browser UI launched via `python -m persona_studio.web`. Keeping
+            # them opt-in at the pyproject level, but the default bootstrap
+            # installs both so users don't hit ImportError on first Open in
+            # browser click.
+            [str(py), "-m", "pip", "install", "--quiet", "-e", ".[dev,web]"],
             cwd=repo_root,
         ),
     ))

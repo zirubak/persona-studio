@@ -202,3 +202,46 @@ def test_auth_screens_removed_from_flow_but_kept_in_source() -> None:
     assert (WEB / "hifi-auth-screens.jsx").is_file(), (
         "hifi-auth-screens.jsx source removed — should stay as dormant scaffolding"
     )
+
+
+# --- Phase 1 fetch-wiring regression guards -----------------------------------
+
+
+def test_hifi_library_fetches_api_personas() -> None:
+    """LibraryA must fetch real personas from /api/personas (Phase 1 wiring)."""
+    content = (WEB / "hifi-library.jsx").read_text(encoding="utf-8")
+    assert "fetch('/api/personas')" in content, (
+        "hifi-library.jsx no longer calls fetch('/api/personas') — Phase 1 wiring regressed"
+    )
+    # Must still tolerate offline: the useEffect should keep the PEOPLE
+    # fallback intact (i.e. the `P` local from window.HF still appears).
+    assert " P.map" not in content or "(people ?? P).map" in content or "(people || P).map" in content, (
+        "LibraryA should render from fetched `people` with fallback to mock `P`"
+    )
+
+
+def test_hifi_results_fetches_api_simulations() -> None:
+    """ResultsA must fetch real past simulations from /api/simulations."""
+    content = (WEB / "hifi-results.jsx").read_text(encoding="utf-8")
+    assert "fetch('/api/simulations')" in content, (
+        "hifi-results.jsx no longer calls fetch('/api/simulations') — Phase 1 wiring regressed"
+    )
+
+
+def test_library_detail_hotspot_disabled_in_phase_1() -> None:
+    """Clicking a real persona card must not land on the mock Paul Graham
+    detail screen. Phase 1 disables the Library→Detail hotspot; Phase 2
+    ships a real detail page."""
+    content = (WEB / "hifi-v2.html").read_text(encoding="utf-8")
+    # Find the HOTSPOTS.library block and assert no uncommented `to: 'detail'`
+    lib_block_match = re.search(
+        r"library:\s*\[(.*?)\]", content, re.DOTALL
+    )
+    assert lib_block_match, "HOTSPOTS.library block missing"
+    lib_block = lib_block_match.group(1)
+    # Strip // line comments before checking
+    stripped = re.sub(r"//[^\n]*", "", lib_block)
+    assert "to: 'detail'" not in stripped, (
+        "Library→Detail hotspot is still active — Phase 1 must disable it "
+        "(UX regression: clicking a real persona card lands on mock PG detail)"
+    )

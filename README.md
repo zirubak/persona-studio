@@ -316,32 +316,45 @@ Disable the whole layer for pure-brainstorm sessions via the `/persona-studio:st
 
 <br/>
 
-## Browser prototype (experimental)
+## Browser prototype (experimental · Phase 1 of web migration)
 
-Persona Studio has been a CLI plugin from day one, but a **clickable browser prototype** of the proposed web UI now lives in [`web/`](web/) — 9 screens (Home, Library, Avatar detail, Create, Setup, Live simulation, Results, Settings, Cloud · soon), built as a single HTML page that loads JSX files at runtime. **No build step required**.
+Persona Studio has been a CLI plugin from day one, but the [`web/`](web/) bundle — 9 screens of a clickable web UI — is in active migration toward becoming the primary runtime. **Phase 1 is now live**: two screens (Library, Results) are wired to real data from your project; the other 7 remain mock pending Phases 2-4.
+
+### Install the web extra (one-time)
 
 ```bash
-cd web/
-# Option 1 — any static server
-python3 -m http.server 7777
-# Option 2 — npx serve
-npx --yes serve -l 7777 .
-# then open http://localhost:7777/hifi-v2.html
+.venv/bin/pip install -e '.[web]'
 ```
 
-What it does today:
+Adds `fastapi`, `uvicorn`, `pyyaml`, and `httpx`. Kept opt-in so users who only use the TUI don't pay the install footprint.
 
-- **Fully clickable flow** — use the nav pills or ← / → arrows to walk through the 9 screens; click hotspots on each screen to move forward on the "happy path" (Home → Setup → Live → Results).
-- **Mock data only** — avatars, simulations, and transcripts shown are design placeholders. This prototype does not yet call the Python grounding or simulation pipeline under `src/persona_studio/`.
-- **Guest mode indicator** — the chrome shows "GUEST MODE · LOCAL ONLY" to signal the future behavior; today there is no persistence beyond the nav selection in `localStorage`.
+### Launch
 
-What it does NOT do yet:
+```bash
+python -m persona_studio.web
+# or via the TUI: /persona-studio:studio → "Open in browser (experimental)"
+```
 
-- No real Ralph simulation (the Live view is animated with scripted turns, not actual LLM output).
-- No write to `data/people/` or `simulations/`.
-- No auth / account / Cloud features — those screens are intentionally hidden and labelled "Cloud · soon".
+Bound to `http://127.0.0.1:7777` — localhost-only, no LAN exposure. Opens the default browser automatically; use `--no-browser` for headless.
 
-Want to help wire the prototype to the real backend? The next phase would be a Streamlit or FastAPI+React frontend that calls `persona_studio.grounding.audit`, `verify_claims`, and a new SSE/WebSocket endpoint for streaming live simulation turns. See the ROADMAP.
+### What's live (Phase 1)
+
+- **Library screen** — fetches `GET /api/personas`, shows the real persona library from both project-local (`./personas/*.md`) and global (`$HOME/.persona-studio/personas/*.md`) scopes with project-priority dedup. Falls through to the mock 7-persona cast if the server is unreachable.
+- **Results screen** — fetches `GET /api/simulations`, overlays the newest past simulation's topic and Ralph score onto the hero. Criteria / trajectory / transcript preview stay mock until Phase 2 ships per-simulation detail.
+- **Static hosting** — the rest of the 9-screen bundle served from `./web/` via a `StaticFiles` mount at `/`; keyboard ← → arrows, localStorage persistence, and the Home → Setup → Live → Results happy-path click route all behave exactly as in PR #8's static mode.
+
+### What's still mock
+
+- Home, Avatar detail, Create, Setup, Live, Settings, Cloud — all render the design's placeholder content. Clicking a Library card does NOT open the mock Paul Graham detail (Phase 1 disables that hotspot to avoid the jarring real-card → mock-detail transition).
+- **No Create / Simulate write path yet** — starting a new avatar or running a simulation must still happen from the TUI (`/persona-studio:studio` menu items 1-3).
+- **No LLM calls from the web backend** — Phase 3 will add a hybrid `claude -p` subprocess + Anthropic SDK layer so Live view animates against real turn output.
+
+### Migration roadmap
+
+1. **Phase 1 (this release)** — read-only Library + Results.
+2. **Phase 2** — persona detail + Create/import write paths wired to `persona_studio.cli extract`.
+3. **Phase 3** — live simulation via SSE + hybrid LLM backend (subprocess default, API key → SDK). The critical path.
+4. **Phase 4** — team-mode panes + realtime user interruption (stretch; sequential mode may be enough).
 
 > The `web/` bundle is a [Claude Design](https://claude.ai/design) handoff. Original design README + chat transcripts are preserved under `web/docs/` for authorial intent. License note: the design recommended ELv2, but this repo stays MIT — see `LICENSE` at the repo root.
 
