@@ -4,6 +4,34 @@
 >
 > TL;DR: this file is a design artifact. For canonical install / run / license info, read the project root README.
 
+## Testing the prototype
+
+**Static regression** (runs with every `pytest`, no browser needed):
+
+```bash
+pytest tests/web/ -v
+```
+
+Verifies that every JSX file imported by `hifi-v2.html` exists, the SCREENS array still has exactly 9 entries, auth screens stay out of the flow while their source files survive for future cloud mode, and the license disambiguation notes stay in place. Catches ~80% of "broke the prototype" regressions without spinning up a browser.
+
+**Live end-to-end** (manual, Playwright — run after substantive UI edits):
+
+```bash
+cd web && python3 -m http.server 7780 &
+# in another shell (or via Playwright MCP / a browser)
+open http://localhost:7780/hifi-v2.html
+```
+
+Walkthrough checklist (verified 2026-04-23):
+
+1. Page loads with zero application-level console errors (favicon 404 + Babel dev warning are expected).
+2. Clicking each of the 9 nav pills renders a screen whose body text contains its expected marker (Home → "Rehearse tomorrow's", Library → "New avatar", Detail → "simulation", Create → "Upload", Setup → "Ralph", Live → "Live", Results → "transcript", Settings → "Data", Cloud → "soon").
+3. Arrow keys navigate between screens (← previous, → next); `localStorage['ps_screen']` persists the selection across reloads.
+4. On the Home screen, clicking the "Start a simulation →" hotspot overlay lands on Setup; "Build an avatar" lands on Create.
+5. Reloading mid-flow restores the last visited screen from `localStorage`.
+
+If any step fails, either a JSX file broke or the `SCREENS` / `HOTSPOTS` tables in `hifi-v2.html` drifted.
+
 ---
 
 > Build AI personas from public writing, real conversations, or your own notes — then stress-test ideas against them before you ship.
