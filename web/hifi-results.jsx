@@ -173,10 +173,7 @@
             </div>
           </div>
         </div>
-        <Note top={80} right={40} rot={3} w={140}>
-          score ring →<br/>celebratory, like<br/>closing rings.
-        </Note>
-      </Browser>
+</Browser>
     );
   }
 
@@ -243,10 +240,7 @@
             </div>
           </div>
         </div>
-        <Note top={80} right={40} rot={-3} w={130}>
-          reads like a<br/>New Yorker profile<br/>of the argument.
-        </Note>
-      </Browser>
+</Browser>
     );
   }
 
@@ -314,10 +308,7 @@
             </div>
           </div>
         </div>
-        <Note top={40} right={30} rot={2} w={150} arrow>
-          the "climb" is<br/>the story. frame<br/>it that way.
-        </Note>
-      </Browser>
+</Browser>
     );
   }
 

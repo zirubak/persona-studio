@@ -245,3 +245,45 @@ def test_library_detail_hotspot_disabled_in_phase_1() -> None:
         "Library→Detail hotspot is still active — Phase 1 must disable it "
         "(UX regression: clicking a real persona card lands on mock PG detail)"
     )
+
+
+_ACTIVE_HIFI_V2_JSX = [
+    "hifi-home.jsx",
+    "hifi-library.jsx",
+    "hifi-v2-screens.jsx",
+    "hifi-live-animated.jsx",
+    "hifi-live.jsx",
+    "hifi-results.jsx",
+]
+
+
+def test_designer_handoff_notes_removed_from_active_screens() -> None:
+    """Designer-to-engineer handwritten margin notes (``<Note>`` elements
+    carrying commentary like "one statement. one breath of air. like
+    apple.com" or "portraits as big as the names") must NOT ship in the
+    active hifi-v2 flow.
+
+    These were handoff artifacts from claude.ai/design explaining design
+    intent to the implementing engineer. They look like unfinished
+    scaffolding to end users and must not appear in production UI.
+
+    Wireframes (``wireframes-screens.jsx``) are intentionally excluded —
+    that file is a historical exploration artifact kept for reference,
+    not reachable from ``hifi-v2.html``.
+    """
+    offenders: list[str] = []
+    for filename in _ACTIVE_HIFI_V2_JSX:
+        path = WEB / filename
+        if not path.exists():
+            continue
+        content = path.read_text(encoding="utf-8")
+        # Count both <Note ...> and <Note>; a false positive on a
+        # variable named "Notes" is unlikely here — JSX component
+        # usage starts with a capital N followed by word-boundary.
+        hits = re.findall(r"<Note[\s>]", content)
+        if hits:
+            offenders.append(f"{filename}: {len(hits)} <Note> tag(s)")
+    assert not offenders, (
+        "Designer handoff notes still present in active hifi-v2 screens:\n  "
+        + "\n  ".join(offenders)
+    )

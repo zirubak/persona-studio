@@ -81,11 +81,7 @@
             </div>
           </div>
         </div>
-
-        <Note top={140} right={64} rot={4} w={170} arrow>
-          one statement.<br/>one breath of air.<br/>like apple.com
-        </Note>
-      </Browser>
+</Browser>
     );
   }
 
@@ -157,10 +153,7 @@
             </div>
           </div>
         </div>
-        <Note top={44} right={28} rot={-3} w={140}>
-          real faces in<br/>real light.<br/>feels warm.
-        </Note>
-      </Browser>
+</Browser>
     );
   }
 
@@ -227,10 +220,7 @@
             </div>
           </div>
         </div>
-        <Note top={60} right={40} rot={3} w={150} arrow>
-          dark variant.<br/>engineers will<br/>live in ⌘K.
-        </Note>
-      </Browser>
+</Browser>
     );
   }
 

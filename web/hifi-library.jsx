@@ -272,10 +272,7 @@
           </div>
           {importOpen && <ImportModal onClose={() => setImportOpen(false)}/>}
         </div>
-        <Note top={70} right={40} rot={3} w={140} arrow>
-          portraits as<br/>big as the names.<br/>people first.
-        </Note>
-      </Browser>
+</Browser>
     );
   }
 
@@ -314,10 +311,7 @@
             <Kalam size={14} color={T.mute}>or drag a folder here to build one automatically</Kalam>
           </div>
         </div>
-        <Note top={50} right={40} rot={-3} w={150}>
-          editorial / museum.<br/>risky. memorable.
-        </Note>
-      </Browser>
+</Browser>
     );
   }
 
