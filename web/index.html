@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Persona Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=Kalam:wght@300;400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  html, body { margin: 0; padding: 0; background: #fbfaf7; font-family: 'Inter', -apple-system, system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; height: 100%; }
+  #root { height: 100vh; }
+  * { box-sizing: border-box; }
+  @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+  @keyframes ring { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(1.3); opacity: 0; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .screen { animation: fadeUp .25s cubic-bezier(.2,.7,.3,1); height: 100%; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="hifi-atoms.jsx"></script>
+<script type="text/babel" src="hifi-home.jsx"></script>
+<script type="text/babel" src="hifi-library.jsx"></script>
+<script type="text/babel" src="hifi-live.jsx"></script>
+<script type="text/babel" src="hifi-results.jsx"></script>
+<script type="text/babel" src="hifi-v2-screens.jsx"></script>
+<script type="text/babel" src="hifi-live-animated.jsx"></script>
+<script type="text/babel" src="hifi-auth-screens.jsx"></script>
+
+<script type="text/babel">
+  // Production shell — renders one screen at a time via hash routing.
+  // No prototype chrome (no HI-FI badge, no 9-pill nav, no "happy path"
+  // footer). Each screen's fake Mac-window <Browser> wrapper is also
+  // stripped via a window.HF.Browser monkey-patch so the UI occupies the
+  // full viewport like a real app.
+  const { useState, useEffect } = React;
+
+  // Replace the prototype Browser chrome with a passthrough container.
+  // Screens still call <Browser url="…" dark={…}>...</Browser>; the url
+  // prop is ignored because the real browser's address bar shows it.
+  window.HF.Browser = ({ children, dark = false }) => (
+    <div style={{
+      height: '100%',
+      background: dark ? window.HF.tokens.ink : window.HF.tokens.paper,
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      fontFamily: window.HF.tokens.fSans,
+      color: dark ? '#fff' : window.HF.tokens.ink,
+    }}>
+      {children}
+    </div>
+  );
+
+  // Route → screen component. Sets of screens the app actually exposes:
+  // the AppNav inside each screen has Home / Library / New / Simulate /
+  // Results tabs, so those five are first-class routes. Detail / Settings
+  // / Cloud are reachable from hotspots or Settings nav once Phase 2+
+  // wire them up; Phase 1 keeps them routable but mock.
+  const ROUTES = {
+    home:     () => <window.HF_Home.HomeA/>,
+    library:  () => <window.HF_Library.LibraryA/>,
+    detail:   () => <window.HF_V2.DetailScreen onNav={navigate}/>,
+    create:   () => <window.HF_V2.CreateScreen onNav={navigate}/>,
+    new:      () => <window.HF_V2.CreateScreen onNav={navigate}/>,  // alias
+    setup:    () => <window.HF_V2.SetupScreen onNav={navigate}/>,
+    simulate: () => <window.HF_V2.SetupScreen onNav={navigate}/>,   // alias
+    live:     () => <window.HF_LiveAnimated.LiveBAnimated/>,
+    results:  () => <window.HF_Results.ResultsA/>,
+    settings: () => <window.HF_Auth.SettingsScreen onNav={navigate}/>,
+  };
+  const DEFAULT_ROUTE = 'home';
+
+  function navigate(route) {
+    // Programmatic navigation: update hash, which fires 'hashchange' and
+    // re-renders. Used by screen onNav props (e.g. CreateScreen "next" CTA).
+    window.location.hash = route;
+  }
+
+  function readHash() {
+    const raw = (window.location.hash || '').replace(/^#\/?/, '');
+    return ROUTES[raw] ? raw : DEFAULT_ROUTE;
+  }
+
+  function App() {
+    const [route, setRoute] = useState(readHash);
+    useEffect(() => {
+      const onHash = () => setRoute(readHash());
+      window.addEventListener('hashchange', onHash);
+      return () => window.removeEventListener('hashchange', onHash);
+    }, []);
+    const render = ROUTES[route] || ROUTES[DEFAULT_ROUTE];
+    return <div className="screen" key={route}>{render()}</div>;
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

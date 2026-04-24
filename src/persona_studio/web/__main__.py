@@ -41,7 +41,12 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if not args.no_browser:
-        url = f"http://{args.host}:{args.port}/hifi-v2.html"
+        # Open the production shell at `/`. StaticFiles(html=True) resolves
+        # a bare `/` to `index.html`, which renders one screen at a time
+        # via hash routing without hifi-v2's prototype chrome. The
+        # design-review wrapper stays accessible at /hifi-v2.html for
+        # anyone who wants to see the 9-pill navigator.
+        url = f"http://{args.host}:{args.port}/"
         # open() blocks until a browser is selected, but with new=2 it
         # opens in a new tab and returns quickly on macOS/Linux. If the
         # call fails entirely (no DISPLAY, no default browser), ignore —

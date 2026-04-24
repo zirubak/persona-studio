@@ -257,6 +257,87 @@ _ACTIVE_HIFI_V2_JSX = [
 ]
 
 
+# --- Production shell (index.html) --------------------------------------------
+#
+# `hifi-v2.html` is a DESIGN-REVIEW wrapper with prototype chrome (HI-FI v2
+# badge, 9-pill screen navigation, fake Mac browser frame around the actual
+# app). Users running `python -m persona_studio.web` should land on the REAL
+# app — no prototype scaffolding. These tests lock in the difference.
+
+
+def test_index_html_exists_as_production_shell() -> None:
+    """Production entry at web/index.html — served at / via StaticFiles html=True."""
+    assert (WEB / "index.html").is_file(), (
+        "web/index.html missing — this is the production shell that renders "
+        "one screen at a time via hash routing, without hifi-v2's prototype chrome"
+    )
+
+
+def test_index_html_has_no_prototype_chrome_markers() -> None:
+    """index.html must NOT contain the hifi-v2 wrapper scaffolding."""
+    content = (WEB / "index.html").read_text(encoding="utf-8")
+    forbidden = [
+        "HI-FI v2 · CLICKABLE",      # top badge
+        "OSS · ELv2",                 # license chip (design-review only)
+        "GUEST MODE · LOCAL ONLY",    # status pill
+        "const SCREENS = [",          # 9-pill nav definition
+        "HAPPY PATH",                 # flow-map footer
+        "navpill",                    # prototype nav pill class
+    ]
+    offenders = [marker for marker in forbidden if marker in content]
+    assert not offenders, (
+        "index.html contains hifi-v2 prototype chrome markers; this should be "
+        "a clean production shell. Found: " + ", ".join(offenders)
+    )
+
+
+def test_index_html_uses_hash_routing() -> None:
+    """Navigation between screens uses URL hash so no SPA framework / build is needed."""
+    content = (WEB / "index.html").read_text(encoding="utf-8")
+    # Either hashchange event listener or a window.location.hash read must exist
+    has_hash_read = "location.hash" in content or "window.location.hash" in content
+    has_hash_listener = "hashchange" in content
+    assert has_hash_read and has_hash_listener, (
+        "index.html must implement hash-based routing: read window.location.hash "
+        "to pick the initial screen + listen to 'hashchange' to re-render"
+    )
+
+
+def test_index_html_strips_fake_browser_chrome() -> None:
+    """The fake Mac <Browser> chrome inside each screen must be overridden.
+
+    Each screen component wraps itself in <Browser url="localhost:7777">
+    (defined in hifi-atoms.jsx) which renders a fake red/yellow/green traffic
+    lights + URL bar. In a real browser that's double chrome. index.html
+    monkey-patches window.HF.Browser to a passthrough so screens render
+    cleanly at full viewport height.
+    """
+    content = (WEB / "index.html").read_text(encoding="utf-8")
+    # The override should mention HF.Browser on the left-hand side of an
+    # assignment. Regex captures `window.HF.Browser =` or `HF.Browser =`.
+    assert re.search(r"(?:window\.)?HF\.Browser\s*=", content), (
+        "index.html must replace window.HF.Browser with a passthrough "
+        "wrapper to strip the fake Mac-style browser chrome from each screen"
+    )
+
+
+def test_main_entrypoint_opens_index_not_hifi_v2() -> None:
+    """`python -m persona_studio.web` should default to the production shell."""
+    src_main = REPO / "src" / "persona_studio" / "web" / "__main__.py"
+    content = src_main.read_text(encoding="utf-8")
+    # Strip comments so mentions like "# design-review at /hifi-v2.html" in
+    # a docblock don't false-trigger. We check actual code lines.
+    code_only = "\n".join(
+        line for line in content.splitlines() if not line.strip().startswith("#")
+    )
+    # The URL f-string that gets passed to webbrowser.open should NOT point
+    # at hifi-v2.html. It should hit / (StaticFiles html=True → index.html).
+    assert "/hifi-v2.html" not in code_only, (
+        "__main__.py still opens /hifi-v2.html by default — should now land "
+        "on / (production shell via index.html)"
+    )
+
+
 def test_designer_handoff_notes_removed_from_active_screens() -> None:
     """Designer-to-engineer handwritten margin notes (``<Note>`` elements
     carrying commentary like "one statement. one breath of air. like
