@@ -120,9 +120,7 @@
               <span style={{ color: T.accent, fontSize: 16 }}>⚠</span>
               <div>Celebrity avatars never impersonate. You'll review and approve the generated profile before it can be used.</div>
             </div>
-
-            <Note top={40} right={-60} rot={-2} w={150}>upload experience<br/>is the new<br/>iTunes CD-rip.</Note>
-          </div>
+</div>
         </div>
       </Browser>
     );

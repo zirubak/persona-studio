@@ -316,32 +316,45 @@ transcript 에 인라인으로 붙는 태그들:
 
 <br/>
 
-## 브라우저 프로토타입 (실험적)
+## 브라우저 프로토타입 (실험적 · 웹 마이그레이션 Phase 1)
 
-지금까지 Persona Studio 는 CLI 플러그인 전용이었지만, 제안된 웹 UI 의 **클릭 가능 프로토타입** 이 [`web/`](web/) 에 추가됐습니다 — 9개 화면 (Home, Library, Avatar 상세, Create, Setup, Live 시뮬레이션, Results, Settings, Cloud · soon), 런타임에 JSX 파일을 로드하는 단일 HTML 페이지. **빌드 단계 없음**.
+지금까지 Persona Studio 는 CLI 플러그인 전용이었지만, [`web/`](web/) 번들 — 9개 화면의 클릭 가능 웹 UI — 가 **primary runtime 으로 전환 중**. **Phase 1 가동**: 2개 화면(Library, Results)은 프로젝트의 실제 데이터에 연결; 나머지 7개는 Phase 2-4 대기 중 mock 유지.
+
+### web extra 설치 (최초 1회)
 
 ```bash
-cd web/
-# 옵션 1 — static server
-python3 -m http.server 7777
-# 옵션 2 — npx serve
-npx --yes serve -l 7777 .
-# 브라우저에서 http://localhost:7777/hifi-v2.html
+.venv/bin/pip install -e '.[web]'
 ```
 
-지금 할 수 있는 것:
+`fastapi`, `uvicorn`, `pyyaml`, `httpx` 추가. TUI 만 쓰는 사용자가 install footprint 비용을 지불하지 않도록 opt-in.
 
-- **완전한 클릭 플로우** — 네비 pill 또는 ← / → 화살표로 9개 화면 이동; 각 화면의 hotspot 을 눌러 happy path (Home → Setup → Live → Results) 전진.
-- **Mock data 만** — 아바타·시뮬레이션·transcript 는 디자인 placeholder. 이 프로토타입은 아직 `src/persona_studio/` 의 Python grounding / simulation 파이프라인을 호출하지 않습니다.
-- **Guest mode 표시** — chrome 에 "GUEST MODE · LOCAL ONLY" 표시로 미래 동작 시사; 현재는 nav 선택만 `localStorage` 에 저장.
+### 실행
 
-아직 안 되는 것:
+```bash
+python -m persona_studio.web
+# 또는 TUI 경유: /persona-studio:studio → "Open in browser (experimental)"
+```
 
-- 실제 Ralph 시뮬레이션 없음 (Live view 는 scripted animated turn 이지 진짜 LLM 출력 아님).
-- `data/people/` · `simulations/` 에 기록 없음.
-- auth / account / Cloud 기능 없음 — 해당 화면은 의도적으로 숨김 + "Cloud · soon" 라벨.
+`http://127.0.0.1:7777` 바인딩 — localhost 전용, LAN 노출 없음. 기본 브라우저 자동 실행. headless 시 `--no-browser`.
 
-프로토타입을 실제 백엔드에 연결하고 싶으시면 다음 단계는 Streamlit 또는 FastAPI+React 프론트엔드로 `persona_studio.grounding.audit`, `verify_claims`, 그리고 live 시뮬레이션 turn 을 스트리밍할 새 SSE/WebSocket 엔드포인트를 호출하는 것. 로드맵 참조.
+### Phase 1 에서 되는 것
+
+- **Library 화면** — `GET /api/personas` fetch, project-local (`./personas/*.md`) + global (`$HOME/.persona-studio/personas/*.md`) 양 scope 에서 실제 persona library 표시 (project 우선 dedup). 서버 닿지 않으면 7-persona mock 으로 fallback.
+- **Results 화면** — `GET /api/simulations` fetch, 가장 최근 시뮬레이션의 topic + Ralph score 를 hero 에 overlay. Criteria / trajectory / transcript preview 는 Phase 2 의 per-simulation detail 까지 mock 유지.
+- **정적 호스팅** — 나머지 9-screen 번들은 `./web/` 의 `StaticFiles` 마운트로 서빙; 키보드 ← → 화살표, localStorage persistence, Home → Setup → Live → Results happy-path 클릭 경로 모두 PR #8 static mode 와 동일 동작.
+
+### 아직 mock 인 것
+
+- Home, Avatar 상세, Create, Setup, Live, Settings, Cloud — 모두 디자인 placeholder 렌더. Library 카드 클릭은 mock Paul Graham detail 로 가지 **않음** (Phase 1 에서 해당 hotspot 비활성화 — real-card→mock-detail 의 jarring transition 방지).
+- **Create / Simulate write path 없음** — 새 아바타 생성·시뮬레이션 실행은 여전히 TUI (`/persona-studio:studio` 메뉴 1-3)에서.
+- **웹 백엔드에서 LLM 호출 없음** — Phase 3 에서 hybrid `claude -p` subprocess + Anthropic SDK 레이어 추가 → Live view 가 실제 turn output 으로 애니메이션.
+
+### 마이그레이션 로드맵
+
+1. **Phase 1 (이번 릴리즈)** — read-only Library + Results.
+2. **Phase 2** — persona detail + Create/import write path, `persona_studio.cli extract` 연결.
+3. **Phase 3** — SSE + hybrid LLM 백엔드 기반 라이브 시뮬레이션 (subprocess 기본, API key 있으면 SDK). Critical path.
+4. **Phase 4** — team-mode pane + realtime user interruption (stretch; sequential 로 충분할 수도).
 
 > `web/` 번들은 [Claude Design](https://claude.ai/design) 핸드오프. 원본 design README + chat transcript 는 작성자 의도 보존을 위해 `web/docs/` 에 보존. 라이선스 주: design 은 ELv2 를 권장했지만 이 레포는 MIT 유지 — 레포 루트 `LICENSE` 참조.
 

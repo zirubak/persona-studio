@@ -202,3 +202,169 @@ def test_auth_screens_removed_from_flow_but_kept_in_source() -> None:
     assert (WEB / "hifi-auth-screens.jsx").is_file(), (
         "hifi-auth-screens.jsx source removed — should stay as dormant scaffolding"
     )
+
+
+# --- Phase 1 fetch-wiring regression guards -----------------------------------
+
+
+def test_hifi_library_fetches_api_personas() -> None:
+    """LibraryA must fetch real personas from /api/personas (Phase 1 wiring)."""
+    content = (WEB / "hifi-library.jsx").read_text(encoding="utf-8")
+    assert "fetch('/api/personas')" in content, (
+        "hifi-library.jsx no longer calls fetch('/api/personas') — Phase 1 wiring regressed"
+    )
+    # Must still tolerate offline: the useEffect should keep the PEOPLE
+    # fallback intact (i.e. the `P` local from window.HF still appears).
+    assert " P.map" not in content or "(people ?? P).map" in content or "(people || P).map" in content, (
+        "LibraryA should render from fetched `people` with fallback to mock `P`"
+    )
+
+
+def test_hifi_results_fetches_api_simulations() -> None:
+    """ResultsA must fetch real past simulations from /api/simulations."""
+    content = (WEB / "hifi-results.jsx").read_text(encoding="utf-8")
+    assert "fetch('/api/simulations')" in content, (
+        "hifi-results.jsx no longer calls fetch('/api/simulations') — Phase 1 wiring regressed"
+    )
+
+
+def test_library_detail_hotspot_disabled_in_phase_1() -> None:
+    """Clicking a real persona card must not land on the mock Paul Graham
+    detail screen. Phase 1 disables the Library→Detail hotspot; Phase 2
+    ships a real detail page."""
+    content = (WEB / "hifi-v2.html").read_text(encoding="utf-8")
+    # Find the HOTSPOTS.library block and assert no uncommented `to: 'detail'`
+    lib_block_match = re.search(
+        r"library:\s*\[(.*?)\]", content, re.DOTALL
+    )
+    assert lib_block_match, "HOTSPOTS.library block missing"
+    lib_block = lib_block_match.group(1)
+    # Strip // line comments before checking
+    stripped = re.sub(r"//[^\n]*", "", lib_block)
+    assert "to: 'detail'" not in stripped, (
+        "Library→Detail hotspot is still active — Phase 1 must disable it "
+        "(UX regression: clicking a real persona card lands on mock PG detail)"
+    )
+
+
+_ACTIVE_HIFI_V2_JSX = [
+    "hifi-home.jsx",
+    "hifi-library.jsx",
+    "hifi-v2-screens.jsx",
+    "hifi-live-animated.jsx",
+    "hifi-live.jsx",
+    "hifi-results.jsx",
+]
+
+
+# --- Production shell (index.html) --------------------------------------------
+#
+# `hifi-v2.html` is a DESIGN-REVIEW wrapper with prototype chrome (HI-FI v2
+# badge, 9-pill screen navigation, fake Mac browser frame around the actual
+# app). Users running `python -m persona_studio.web` should land on the REAL
+# app — no prototype scaffolding. These tests lock in the difference.
+
+
+def test_index_html_exists_as_production_shell() -> None:
+    """Production entry at web/index.html — served at / via StaticFiles html=True."""
+    assert (WEB / "index.html").is_file(), (
+        "web/index.html missing — this is the production shell that renders "
+        "one screen at a time via hash routing, without hifi-v2's prototype chrome"
+    )
+
+
+def test_index_html_has_no_prototype_chrome_markers() -> None:
+    """index.html must NOT contain the hifi-v2 wrapper scaffolding."""
+    content = (WEB / "index.html").read_text(encoding="utf-8")
+    forbidden = [
+        "HI-FI v2 · CLICKABLE",      # top badge
+        "OSS · ELv2",                 # license chip (design-review only)
+        "GUEST MODE · LOCAL ONLY",    # status pill
+        "const SCREENS = [",          # 9-pill nav definition
+        "HAPPY PATH",                 # flow-map footer
+        "navpill",                    # prototype nav pill class
+    ]
+    offenders = [marker for marker in forbidden if marker in content]
+    assert not offenders, (
+        "index.html contains hifi-v2 prototype chrome markers; this should be "
+        "a clean production shell. Found: " + ", ".join(offenders)
+    )
+
+
+def test_index_html_uses_hash_routing() -> None:
+    """Navigation between screens uses URL hash so no SPA framework / build is needed."""
+    content = (WEB / "index.html").read_text(encoding="utf-8")
+    # Either hashchange event listener or a window.location.hash read must exist
+    has_hash_read = "location.hash" in content or "window.location.hash" in content
+    has_hash_listener = "hashchange" in content
+    assert has_hash_read and has_hash_listener, (
+        "index.html must implement hash-based routing: read window.location.hash "
+        "to pick the initial screen + listen to 'hashchange' to re-render"
+    )
+
+
+def test_index_html_strips_fake_browser_chrome() -> None:
+    """The fake Mac <Browser> chrome inside each screen must be overridden.
+
+    Each screen component wraps itself in <Browser url="localhost:7777">
+    (defined in hifi-atoms.jsx) which renders a fake red/yellow/green traffic
+    lights + URL bar. In a real browser that's double chrome. index.html
+    monkey-patches window.HF.Browser to a passthrough so screens render
+    cleanly at full viewport height.
+    """
+    content = (WEB / "index.html").read_text(encoding="utf-8")
+    # The override should mention HF.Browser on the left-hand side of an
+    # assignment. Regex captures `window.HF.Browser =` or `HF.Browser =`.
+    assert re.search(r"(?:window\.)?HF\.Browser\s*=", content), (
+        "index.html must replace window.HF.Browser with a passthrough "
+        "wrapper to strip the fake Mac-style browser chrome from each screen"
+    )
+
+
+def test_main_entrypoint_opens_index_not_hifi_v2() -> None:
+    """`python -m persona_studio.web` should default to the production shell."""
+    src_main = REPO / "src" / "persona_studio" / "web" / "__main__.py"
+    content = src_main.read_text(encoding="utf-8")
+    # Strip comments so mentions like "# design-review at /hifi-v2.html" in
+    # a docblock don't false-trigger. We check actual code lines.
+    code_only = "\n".join(
+        line for line in content.splitlines() if not line.strip().startswith("#")
+    )
+    # The URL f-string that gets passed to webbrowser.open should NOT point
+    # at hifi-v2.html. It should hit / (StaticFiles html=True → index.html).
+    assert "/hifi-v2.html" not in code_only, (
+        "__main__.py still opens /hifi-v2.html by default — should now land "
+        "on / (production shell via index.html)"
+    )
+
+
+def test_designer_handoff_notes_removed_from_active_screens() -> None:
+    """Designer-to-engineer handwritten margin notes (``<Note>`` elements
+    carrying commentary like "one statement. one breath of air. like
+    apple.com" or "portraits as big as the names") must NOT ship in the
+    active hifi-v2 flow.
+
+    These were handoff artifacts from claude.ai/design explaining design
+    intent to the implementing engineer. They look like unfinished
+    scaffolding to end users and must not appear in production UI.
+
+    Wireframes (``wireframes-screens.jsx``) are intentionally excluded —
+    that file is a historical exploration artifact kept for reference,
+    not reachable from ``hifi-v2.html``.
+    """
+    offenders: list[str] = []
+    for filename in _ACTIVE_HIFI_V2_JSX:
+        path = WEB / filename
+        if not path.exists():
+            continue
+        content = path.read_text(encoding="utf-8")
+        # Count both <Note ...> and <Note>; a false positive on a
+        # variable named "Notes" is unlikely here — JSX component
+        # usage starts with a capital N followed by word-boundary.
+        hits = re.findall(r"<Note[\s>]", content)
+        if hits:
+            offenders.append(f"{filename}: {len(hits)} <Note> tag(s)")
+    assert not offenders, (
+        "Designer handoff notes still present in active hifi-v2 screens:\n  "
+        + "\n  ".join(offenders)
+    )

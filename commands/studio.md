@@ -64,8 +64,9 @@ Use `AskUserQuestion` with this question, repeated until the user picks `Exit`:
   3. `Meeting simulation (facilitated)` — "A facilitator-led meeting with an agenda"
   4. `List avatars` — "Summary of saved personas"
   5. `Refine an avatar` — "Update specific sections of one persona"
-  6. `Toggle factual grounding` — "Turn grounding ON/OFF for this session (default: ON). Brainstorming sessions may want it OFF to welcome divergent claims."
-  7. `Exit` — "Exit the studio"
+  6. `Open in browser (experimental)` — "Launch the web UI at http://localhost:7777. Library + past Results show live data; Create/Simulate still use this menu."
+  7. `Toggle factual grounding` — "Turn grounding ON/OFF for this session (default: ON). Brainstorming sessions may want it OFF to welcome divergent claims."
+  8. `Exit` — "Exit the studio"
 
 Route to the matching sub-flow below. After each sub-flow returns, come back to
 this menu instead of ending the session.
@@ -183,6 +184,45 @@ State lives in a single JSON file at the project root: `data/grounding-session.j
       GROUNDING_ENABLED=true
   fi
   ```
+
+## Route G — Open in browser (experimental)
+
+Phase 1 of the web migration: boot a local FastAPI server and open the
+browser to the 9-screen prototype. The Library and Results screens show
+real data from the current project; the other 7 screens remain mock and
+write-path operations (Create, Simulate) still flow through this TUI.
+
+Ensure the optional `[web]` dependencies are installed (idempotent):
+
+```bash
+.venv/bin/pip install -e '.[web]' > /dev/null 2>&1 || true
+```
+
+Start the server via `run_in_background=true` Bash so this command can
+return to the menu while the server keeps running. The launcher already
+opens the user's default browser:
+
+```bash
+.venv/bin/python -m persona_studio.web --port 7777
+```
+
+Print the URL and a one-line stop-hint, then return to the main menu:
+
+```
+Opened: http://127.0.0.1:7777/hifi-v2.html
+Stop the server when you're done: press Ctrl-C in the shell that started it, or `lsof -ti:7777 | xargs kill`.
+```
+
+**What works in Phase 1**: Library screen (live personas from
+`./personas/` + `$HOME/.persona-studio/personas/`), Results screen
+(newest past simulation overlaid on the hero; mock criteria/trajectory
+for rest), 9-screen navigation, keyboard ← → arrows, localStorage
+persistence.
+
+**What doesn't work yet**: clicking a Library card doesn't open a detail
+(Phase 2 — the mock Paul Graham detail hotspot is disabled). Create /
+Setup / Live / Settings screens render but are mock (Phase 2/3/4). Any
+actual simulation must still be started from this TUI.
 
 ## Non-negotiable rules
 

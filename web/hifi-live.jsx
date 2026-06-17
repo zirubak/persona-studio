@@ -105,10 +105,7 @@
             <div><Mono size={10}>MODEL</Mono> <Mono size={11} color="#fff">sonnet-4.5</Mono></div>
           </div>
         </div>
-        <Note top={18} right={40} rot={2} w={150} arrow>
-          closest to tmux.<br/>still legible on<br/>a laptop screen.
-        </Note>
-      </Browser>
+</Browser>
     );
   }
 
@@ -201,10 +198,7 @@
             </div>
           </div>
         </div>
-        <Note top={90} right={410} rot={-3} w={140} arrow>
-          spatial metaphor.<br/>you feel who's<br/>talking to whom.
-        </Note>
-      </Browser>
+</Browser>
     );
   }
 
@@ -287,10 +281,7 @@
             </div>
           </div>
         </div>
-        <Note top={120} right={28} rot={3} w={150}>
-          readable,<br/>quotable.<br/>feels editorial.
-        </Note>
-      </Browser>
+</Browser>
     );
   }
 
